@@ -21,7 +21,7 @@ People with ADHD often struggle with traditional productivity tools because they
 
 - **Task Creation**: The User can create and complete tasks either short term or long term
 - **Clean Daily Interface**: Daily check on in progress and track ongoing tasks
-- **Instant Gratification**: The User is awarded for completing tasks with profile customization options and gain level ups and prestige
+- **Instant Gratification**: The User is awarded for completing tasks with profile customization options and prestige
 
 ### ADHD-Specific Features
 
