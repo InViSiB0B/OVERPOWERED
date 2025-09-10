@@ -1,17 +1,23 @@
-package com.example.overpowered
+package com.example.overpowered.navigation
 
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.overpowered.ui.theme.OVERPOWEREDTheme
 
 enum class Tab { Today, Rewards, Shop }
@@ -22,20 +28,29 @@ fun MainNavigation() {
     var tab by remember { mutableStateOf(Tab.Today) }
 
     Scaffold(
+        topBar = {
+            TopStatusBar(currentTab = tab)
+        },
         floatingActionButton = {
             LargeFloatingActionButton(
                 onClick = { tab = Tab.Today },
                 containerColor = if (tab == Tab.Today)
                     MaterialTheme.colorScheme.primary
                 else
-                    MaterialTheme.colorScheme.secondaryContainer
+                    MaterialTheme.colorScheme.secondaryContainer,
+                shape = RoundedCornerShape(50)
             ) {
-                Icon(Icons.Filled.List, contentDescription = "Rewards")
+                Icon(
+                    Icons.AutoMirrored.Filled.List,
+                    contentDescription = "Tasks",
+                    modifier = Modifier.size(32.dp)
+                )
             }
         },
         floatingActionButtonPosition = FabPosition.Center,
         bottomBar = {
             BottomAppBar(
+                containerColor = Color(0xFF4A5568),
                 actions = {
                     Spacer(Modifier.weight(1f))
                     IconButton(
@@ -44,8 +59,9 @@ fun MainNavigation() {
                     ) {
                         Icon(
                             Icons.Filled.Person,
-                            contentDescription = "Today",
-                            modifier = Modifier.size(32.dp)
+                            contentDescription = "Rewards",
+                            modifier = Modifier.size(32.dp),
+                            tint = Color.White
                         )
                     }
                     Spacer(Modifier.weight(2f))
@@ -56,45 +72,155 @@ fun MainNavigation() {
                         Icon(
                             Icons.Filled.ShoppingCart,
                             contentDescription = "Shop",
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(32.dp),
+                            tint = Color.White
                         )
                     }
                     Spacer(Modifier.weight(1f))
                 }
             )
         }
-    ) { inner ->
-        Surface(Modifier.padding(inner)) {
+    ) { innerPadding ->
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            color = Color(0xFFF7FAFC)
+        ) {
             when (tab) {
-                Tab.Rewards -> Screen("Rewards")
-                Tab.Today   -> Screen("Today")
-                Tab.Shop    -> Screen("Shop")
+                Tab.Today -> TodayScreen()
+                Tab.Rewards -> RewardsScreen()
+                Tab.Shop -> ShopScreen()
             }
         }
     }
 }
 
 @Composable
-private fun Screen(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.headlineMedium,
-        modifier = Modifier.padding(24.dp)
-    )
-}
+fun TopStatusBar(currentTab: Tab) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(120.dp),
+        shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF667EEA))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 32.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Top level - Profile Picture, OVERPOWERED Logo, Current Tab
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Left - Profile Picture
+                Card(
+                    modifier = Modifier.size(32.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.2f))
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Filled.Person,
+                            contentDescription = "Profile",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
 
-@Composable
-fun Greeting(name: String) {
-    androidx.compose.material3.Text(
-        text = "Hello $name!",
-        style = MaterialTheme.typography.headlineMedium
-    )
+                // Center - OVERPOWERED Logo
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "OVERPOWERED",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Right - Current Tab
+                Text(
+                    text = when(currentTab) {
+                        Tab.Today -> "Today"
+                        Tab.Rewards -> "Rewards"
+                        Tab.Shop -> "Shop"
+                    },
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // Bottom level - EXP and Money
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Left stat - EXP
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "EXP",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "expAmount",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Right stat - Money
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "$",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "moneyAmount",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
+fun MainNavigationPreview() {
     OVERPOWEREDTheme {
-        Greeting("Android")
+        MainNavigation()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TopStatusBarPreview() {
+    OVERPOWEREDTheme {
+        TopStatusBar(currentTab = Tab.Today)
     }
 }
