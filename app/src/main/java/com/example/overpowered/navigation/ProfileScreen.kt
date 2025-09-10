@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(onEditClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -31,7 +31,7 @@ fun ProfileScreen() {
             horizontalArrangement = Arrangement.End
         ) {
             Button(
-                onClick = { /* Handle edit click */ },
+                onClick = onEditClick,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF667EEA)
                 ),

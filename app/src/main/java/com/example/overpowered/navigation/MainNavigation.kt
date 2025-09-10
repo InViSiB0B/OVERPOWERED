@@ -28,20 +28,23 @@ enum class Tab { Today, Rewards, Shop }
 fun MainNavigation() {
     var tab by remember { mutableStateOf(Tab.Today) }
     var showProfile by remember { mutableStateOf(false) }
+    var showEditProfile by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopStatusBar(
                 currentTab = tab,
                 showProfile = showProfile,
+                showEditProfile = showEditProfile,
                 onProfileClick = { showProfile = !showProfile }
             )
         },
         floatingActionButton = {
             LargeFloatingActionButton(
                 onClick = {
-                    if (showProfile) {
+                    if (showProfile || showEditProfile) {
                         showProfile = false
+                        showEditProfile = false
                         tab = Tab.Today
                     } else {
                         tab = Tab.Today
@@ -68,8 +71,13 @@ fun MainNavigation() {
                     Spacer(Modifier.weight(1f))
                     IconButton(
                         onClick = {
-                            tab = Tab.Rewards
-                            showProfile = false
+                            if (showProfile || showEditProfile) {
+                                showProfile = false
+                                showEditProfile = false
+                                tab = Tab.Rewards
+                            } else {
+                                tab = Tab.Rewards
+                            }
                         },
                         modifier = Modifier.size(64.dp)
                     ) {
@@ -83,8 +91,13 @@ fun MainNavigation() {
                     Spacer(Modifier.weight(2f))
                     IconButton(
                         onClick = {
-                            tab = Tab.Shop
-                            showProfile = false
+                            if (showProfile || showEditProfile) {
+                                showProfile = false
+                                showEditProfile = false
+                                tab = Tab.Shop
+                            } else {
+                                tab = Tab.Shop
+                            }
                         },
                         modifier = Modifier.size(64.dp)
                     ) {
@@ -106,8 +119,10 @@ fun MainNavigation() {
                 .padding(innerPadding),
             color = Color(0xFFF7FAFC)
         ) {
-            if (showProfile) {
-                ProfileScreen()
+            if (showEditProfile) {
+                EditProfileScreen(onBackClick = { showEditProfile = false })
+            } else if (showProfile) {
+                ProfileScreen(onEditClick = { showEditProfile = true })
             } else {
                 when (tab) {
                     Tab.Today -> TodayScreen()
@@ -120,7 +135,7 @@ fun MainNavigation() {
 }
 
 @Composable
-fun TopStatusBar(currentTab: Tab, showProfile: Boolean, onProfileClick: () -> Unit) {
+fun TopStatusBar(currentTab: Tab, showProfile: Boolean, showEditProfile: Boolean, onProfileClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -249,6 +264,6 @@ fun MainNavigationPreview() {
 @Composable
 fun TopStatusBarPreview() {
     OVERPOWEREDTheme {
-        TopStatusBar(currentTab = Tab.Today, showProfile = false, onProfileClick = {})
+        TopStatusBar(currentTab = Tab.Today, showProfile = false, showEditProfile = false, onProfileClick = {})
     }
 }
