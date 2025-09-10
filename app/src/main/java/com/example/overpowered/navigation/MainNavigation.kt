@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -26,15 +27,27 @@ enum class Tab { Today, Rewards, Shop }
 @Composable
 fun MainNavigation() {
     var tab by remember { mutableStateOf(Tab.Today) }
+    var showProfile by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            TopStatusBar(currentTab = tab)
+            TopStatusBar(
+                currentTab = tab,
+                showProfile = showProfile,
+                onProfileClick = { showProfile = !showProfile }
+            )
         },
         floatingActionButton = {
             LargeFloatingActionButton(
-                onClick = { tab = Tab.Today },
-                containerColor = if (tab == Tab.Today)
+                onClick = {
+                    if (showProfile) {
+                        showProfile = false
+                        tab = Tab.Today
+                    } else {
+                        tab = Tab.Today
+                    }
+                },
+                containerColor = if (tab == Tab.Today && !showProfile)
                     MaterialTheme.colorScheme.primary
                 else
                     MaterialTheme.colorScheme.secondaryContainer,
@@ -54,7 +67,10 @@ fun MainNavigation() {
                 actions = {
                     Spacer(Modifier.weight(1f))
                     IconButton(
-                        onClick = { tab = Tab.Rewards },
+                        onClick = {
+                            tab = Tab.Rewards
+                            showProfile = false
+                        },
                         modifier = Modifier.size(64.dp)
                     ) {
                         Icon(
@@ -66,7 +82,10 @@ fun MainNavigation() {
                     }
                     Spacer(Modifier.weight(2f))
                     IconButton(
-                        onClick = { tab = Tab.Shop },
+                        onClick = {
+                            tab = Tab.Shop
+                            showProfile = false
+                        },
                         modifier = Modifier.size(64.dp)
                     ) {
                         Icon(
@@ -87,22 +106,26 @@ fun MainNavigation() {
                 .padding(innerPadding),
             color = Color(0xFFF7FAFC)
         ) {
-            when (tab) {
-                Tab.Today -> TodayScreen()
-                Tab.Rewards -> RewardsScreen()
-                Tab.Shop -> ShopScreen()
+            if (showProfile) {
+                ProfileScreen()
+            } else {
+                when (tab) {
+                    Tab.Today -> TodayScreen()
+                    Tab.Rewards -> RewardsScreen()
+                    Tab.Shop -> ShopScreen()
+                }
             }
         }
     }
 }
 
 @Composable
-fun TopStatusBar(currentTab: Tab) {
+fun TopStatusBar(currentTab: Tab, showProfile: Boolean, onProfileClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(120.dp),
-        shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
+        shape = RectangleShape,
         colors = CardDefaults.cardColors(containerColor = Color(0xFF667EEA))
     ) {
         Column(
@@ -120,7 +143,8 @@ fun TopStatusBar(currentTab: Tab) {
                 Card(
                     modifier = Modifier.size(32.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.2f))
+                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.2f)),
+                    onClick = onProfileClick
                 ) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -150,10 +174,14 @@ fun TopStatusBar(currentTab: Tab) {
 
                 // Right - Current Tab
                 Text(
-                    text = when(currentTab) {
-                        Tab.Today -> "Today"
-                        Tab.Rewards -> "Rewards"
-                        Tab.Shop -> "Shop"
+                    text = if (showProfile) {
+                        "Profile"
+                    } else {
+                        when(currentTab) {
+                            Tab.Today -> "Today"
+                            Tab.Rewards -> "Rewards"
+                            Tab.Shop -> "Shop"
+                        }
                     },
                     color = Color.White,
                     fontSize = 16.sp,
@@ -179,7 +207,7 @@ fun TopStatusBar(currentTab: Tab) {
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "expAmount",
+                        text = "playerExperiencePoints",
                         color = Color.White,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
@@ -198,7 +226,7 @@ fun TopStatusBar(currentTab: Tab) {
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "moneyAmount",
+                        text = "playerMoney",
                         color = Color.White,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
@@ -221,6 +249,6 @@ fun MainNavigationPreview() {
 @Composable
 fun TopStatusBarPreview() {
     OVERPOWEREDTheme {
-        TopStatusBar(currentTab = Tab.Today)
+        TopStatusBar(currentTab = Tab.Today, showProfile = false, onProfileClick = {})
     }
 }
