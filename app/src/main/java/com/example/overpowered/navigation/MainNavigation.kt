@@ -149,7 +149,7 @@ fun TopStatusBar(currentTab: Tab, showProfile: Boolean, showEditProfile: Boolean
                 .padding(horizontal = 20.dp, vertical = 32.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top level - Profile Picture, OVERPOWERED Logo, Current Tab
+            // Top level - Profile Picture, OVERPOWERED Logo, Current Tabs
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
