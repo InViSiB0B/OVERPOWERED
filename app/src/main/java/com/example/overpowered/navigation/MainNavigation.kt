@@ -88,7 +88,7 @@ fun MainNavigation() {
             color = Color(0xFFF7FAFC)
         ) {
             when (tab) {
-                Tab.Today -> TasksScreen()
+                Tab.Today -> TodayScreen()
                 Tab.Rewards -> RewardsScreen()
                 Tab.Shop -> ShopScreen()
             }
@@ -206,75 +206,6 @@ fun TopStatusBar(currentTab: Tab) {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun TasksScreen() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Today",
-            style = MaterialTheme.typography.headlineMedium,
-            color = Color(0xFF4A5568)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Your tasks will appear here",
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.Gray
-        )
-    }
-}
-
-@Composable
-fun RewardsScreen() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Rewards",
-            style = MaterialTheme.typography.headlineMedium,
-            color = Color(0xFF4A5568)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Your rewards will appear here",
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.Gray
-        )
-    }
-}
-
-@Composable
-fun ShopScreen() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Shop",
-            style = MaterialTheme.typography.headlineMedium,
-            color = Color(0xFF4A5568)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Shop items will appear here",
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.Gray
-        )
     }
 }
 
