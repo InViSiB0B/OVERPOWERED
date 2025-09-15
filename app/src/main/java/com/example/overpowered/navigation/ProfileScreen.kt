@@ -103,12 +103,12 @@ fun ProfileScreen(onEditClick: () -> Unit) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Experience Points",
+                        text = "Player Level",
                         fontSize = 16.sp,
                         color = Color(0xFF4A5568)
                     )
                     Text(
-                        text = "playerExperiencePoints",
+                        text = "playerLevel",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF667EEA)
@@ -139,12 +139,12 @@ fun ProfileScreen(onEditClick: () -> Unit) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Level",
+                        text = "Experience Points",
                         fontSize = 16.sp,
                         color = Color(0xFF4A5568)
                     )
                     Text(
-                        text = "playerLevel",
+                        text = "playerExperiencePoints",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFED8936)

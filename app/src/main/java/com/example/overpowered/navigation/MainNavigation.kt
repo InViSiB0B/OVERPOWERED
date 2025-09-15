@@ -204,25 +204,25 @@ fun TopStatusBar(currentTab: Tab, showProfile: Boolean, showEditProfile: Boolean
                 )
             }
 
-            // Bottom level - EXP and Money
+            // Bottom level - Level and Money
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left stat - EXP
+                // Left stat - Level
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "EXP",
+                        text = "LVL",
                         color = Color.White,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "playerExperiencePoints",
+                        text = "playerLevel",
                         color = Color.White,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
