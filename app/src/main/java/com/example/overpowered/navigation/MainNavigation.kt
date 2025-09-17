@@ -29,6 +29,7 @@ fun MainNavigation() {
     var tab by remember { mutableStateOf(Tab.Today) }
     var showProfile by remember { mutableStateOf(false) }
     var showEditProfile by remember { mutableStateOf(false) }
+    var playerName by remember { mutableStateOf("Player Name") }
 
     Scaffold(
         topBar = {
@@ -120,9 +121,15 @@ fun MainNavigation() {
             color = Color(0xFFF7FAFC)
         ) {
             if (showEditProfile) {
-                EditProfileScreen(onBackClick = { showEditProfile = false })
+                EditProfileScreen(
+                    playerName = playerName,
+                    onPlayerNameChange = { playerName = it},
+                    onBackClick = { showEditProfile = false }
+                )
             } else if (showProfile) {
-                ProfileScreen(onEditClick = { showEditProfile = true })
+                ProfileScreen(
+                    playerName = playerName,
+                    onEditClick = { showEditProfile = true })
             } else {
                 when (tab) {
                     Tab.Today -> TodayScreen()

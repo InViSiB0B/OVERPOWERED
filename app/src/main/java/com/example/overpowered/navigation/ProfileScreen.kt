@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun ProfileScreen(onEditClick: () -> Unit) {
+fun ProfileScreen(playerName: String, onEditClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()

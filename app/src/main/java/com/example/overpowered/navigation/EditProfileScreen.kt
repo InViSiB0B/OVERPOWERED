@@ -7,15 +7,25 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 @Composable
-fun EditProfileScreen(onBackClick: () -> Unit) {
+fun EditProfileScreen(
+    playerName: String,
+    onPlayerNameChange: (String) -> Unit,
+    onBackClick: () -> Unit
+) {
+    var tempPlayerName by remember { mutableStateOf(playerName) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -43,7 +53,7 @@ fun EditProfileScreen(onBackClick: () -> Unit) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Profile Picture (editable)\
+        // Profile Picture (editable)
         Card(
             modifier = Modifier.size(120.dp),
             shape = RoundedCornerShape(60.dp),
@@ -105,8 +115,8 @@ fun EditProfileScreen(onBackClick: () -> Unit) {
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     OutlinedTextField(
-                        value = "PlayerName",
-                        onValueChange = {/* Handle name change */},
+                        value = "tempPlayerName",
+                        onValueChange = { tempPlayerName = it },
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Color(0xFF667EEA),
@@ -118,7 +128,10 @@ fun EditProfileScreen(onBackClick: () -> Unit) {
 
             // Save button
             Button(
-                onClick = { /* Handle save */ },
+                onClick = {
+                    onPlayerNameChange(tempPlayerName)
+                    onBackClick()
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF48BB78)
