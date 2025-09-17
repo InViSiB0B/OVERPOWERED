@@ -24,7 +24,7 @@ fun EditProfileScreen(
     onPlayerNameChange: (String) -> Unit,
     onBackClick: () -> Unit
 ) {
-    var tempPlayerName by remember { mutableStateOf(playerName) }
+    val (tempName, setTempName) = remember { mutableStateOf(playerName) }
 
     Column(
         modifier = Modifier
@@ -115,8 +115,8 @@ fun EditProfileScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     OutlinedTextField(
-                        value = "tempPlayerName",
-                        onValueChange = { tempPlayerName = it },
+                        value = tempName,
+                        onValueChange = setTempName,
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Color(0xFF667EEA),
@@ -129,7 +129,7 @@ fun EditProfileScreen(
             // Save button
             Button(
                 onClick = {
-                    onPlayerNameChange(tempPlayerName)
+                    onPlayerNameChange(tempName)
                     onBackClick()
                 },
                 modifier = Modifier.fillMaxWidth(),

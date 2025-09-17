@@ -76,7 +76,7 @@ fun ProfileScreen(playerName: String, onEditClick: () -> Unit) {
 
         // User info
         Text(
-            text = "playerName",
+            text = playerName,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF4A5568)
