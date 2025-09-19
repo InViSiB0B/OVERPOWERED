@@ -20,7 +20,7 @@ import android.net.Uri
 import androidx.compose.foundation.Image
 
 @Composable
-fun ProfileScreen(playerName: String, profileImageUri: Uri?, onEditClick: () -> Unit) {
+fun ProfileScreen(playerName: String, profileImageUri: Uri?, playerMoney: Int, onEditClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -142,7 +142,7 @@ fun ProfileScreen(playerName: String, profileImageUri: Uri?, onEditClick: () -> 
                         color = Color(0xFF4A5568)
                     )
                     Text(
-                        text = "playerMoney",
+                        text = "$$playerMoney",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF48BB78)
