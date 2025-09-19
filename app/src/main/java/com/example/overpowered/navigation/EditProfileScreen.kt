@@ -1,5 +1,6 @@
 package com.example.overpowered.navigation
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,16 +16,30 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.rememberAsyncImagePainter
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 
 @Composable
 fun EditProfileScreen(
     playerName: String,
+    profileImageUri: Uri?,
     onPlayerNameChange: (String) -> Unit,
+    onProfileImageChange: (Uri?) -> Unit,
     onBackClick: () -> Unit
 ) {
     val (tempName, setTempName) = remember { mutableStateOf(playerName) }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { onProfileImageChange(it) }
+    }
+
 
     Column(
         modifier = Modifier
@@ -55,7 +70,9 @@ fun EditProfileScreen(
 
         // Profile Picture (editable)
         Card(
-            modifier = Modifier.size(120.dp),
+            modifier = Modifier
+                .size(120.dp)
+                .clickable { imagePickerLauncher.launch("image/*") },
             shape = RoundedCornerShape(60.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF667EEA))
         ) {
@@ -63,18 +80,29 @@ fun EditProfileScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Filled.Person,
-                    contentDescription = "Profile Picture",
-                    tint = Color.White,
-                    modifier = Modifier.size(60.dp)
-                )
+                if (profileImageUri != null) {
+                    Image(
+                        painter = rememberAsyncImagePainter(model = profileImageUri),
+                        contentDescription = "Profile Picture",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(60.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        Icons.Filled.Person,
+                        contentDescription = "Profile Picture",
+                        tint = Color.White,
+                        modifier = Modifier.size(60.dp)
+                    )
+                }
             }
         }
 
         // Change Photo button
         Button(
-            onClick = { /* Handle photo change */},
+            onClick = { imagePickerLauncher.launch("image/*") },
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFF667EEA)
             ),

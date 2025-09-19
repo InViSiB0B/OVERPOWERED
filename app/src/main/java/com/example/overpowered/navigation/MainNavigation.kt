@@ -20,6 +20,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.overpowered.ui.theme.OVERPOWEREDTheme
+import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.rememberAsyncImagePainter
 
 enum class Tab { Today, Rewards, Shop }
 
@@ -30,6 +35,7 @@ fun MainNavigation() {
     var showProfile by remember { mutableStateOf(false) }
     var showEditProfile by remember { mutableStateOf(false) }
     var playerName by remember { mutableStateOf("Player Name") }
+    var profileImageUri by remember { mutableStateOf<Uri?>(null) }
 
     Scaffold(
         topBar = {
@@ -37,6 +43,7 @@ fun MainNavigation() {
                 currentTab = tab,
                 showProfile = showProfile,
                 showEditProfile = showEditProfile,
+                profileImageUri = profileImageUri,
                 onProfileClick = { showProfile = !showProfile }
             )
         },
@@ -123,12 +130,15 @@ fun MainNavigation() {
             if (showEditProfile) {
                 EditProfileScreen(
                     playerName = playerName,
+                    profileImageUri = profileImageUri,
                     onPlayerNameChange = { playerName = it},
+                    onProfileImageChange = { profileImageUri = it },
                     onBackClick = { showEditProfile = false }
                 )
             } else if (showProfile) {
                 ProfileScreen(
                     playerName = playerName,
+                    profileImageUri = profileImageUri,
                     onEditClick = { showEditProfile = true })
             } else {
                 when (tab) {
@@ -142,7 +152,12 @@ fun MainNavigation() {
 }
 
 @Composable
-fun TopStatusBar(currentTab: Tab, showProfile: Boolean, showEditProfile: Boolean, onProfileClick: () -> Unit) {
+fun TopStatusBar(
+    currentTab: Tab,
+    showProfile: Boolean,
+    showEditProfile: Boolean,
+    profileImageUri: Uri?,
+    onProfileClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -172,12 +187,23 @@ fun TopStatusBar(currentTab: Tab, showProfile: Boolean, showEditProfile: Boolean
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            Icons.Filled.Person,
-                            contentDescription = "Profile",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        if (profileImageUri != null) {
+                            Image(
+                                painter = rememberAsyncImagePainter(profileImageUri),
+                                contentDescription = "Profile",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(16.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(
+                                Icons.Filled.Person,
+                                contentDescription = "Profile",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
 
@@ -271,6 +297,11 @@ fun MainNavigationPreview() {
 @Composable
 fun TopStatusBarPreview() {
     OVERPOWEREDTheme {
-        TopStatusBar(currentTab = Tab.Today, showProfile = false, showEditProfile = false, onProfileClick = {})
+        TopStatusBar(
+            currentTab = Tab.Today,
+            showProfile = false,
+            showEditProfile = false,
+            profileImageUri = null,
+            onProfileClick = {})
     }
 }
