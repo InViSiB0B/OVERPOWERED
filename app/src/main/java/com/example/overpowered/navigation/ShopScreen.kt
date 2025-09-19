@@ -32,7 +32,7 @@ fun ShopScreen(
     playerMoney: Int,
     onPurchase: (Int) -> Unit
 ) {
-    // Sample data for each category
+    // Example Items for testing
     val frames = listOf(
         ShopItem("frame_1", "Autumn", 10, "Frames", Color(0xFFFF6B35)),
         ShopItem("frame_2", "Confetti", 10, "Frames", Color(0xFF4ECDC4)),
