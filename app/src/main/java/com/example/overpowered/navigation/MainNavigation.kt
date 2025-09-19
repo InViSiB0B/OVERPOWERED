@@ -20,6 +20,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.overpowered.ui.theme.OVERPOWEREDTheme
+import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.rememberAsyncImagePainter
 
 enum class Tab { Today, Rewards, Shop }
 
@@ -29,6 +34,9 @@ fun MainNavigation() {
     var tab by remember { mutableStateOf(Tab.Today) }
     var showProfile by remember { mutableStateOf(false) }
     var showEditProfile by remember { mutableStateOf(false) }
+    var playerName by remember { mutableStateOf("Player Name") }
+    var profileImageUri by remember { mutableStateOf<Uri?>(null) }
+    var playerMoney by remember { mutableStateOf(100) } // Starting with $100 for testing
 
     Scaffold(
         topBar = {
@@ -36,6 +44,8 @@ fun MainNavigation() {
                 currentTab = tab,
                 showProfile = showProfile,
                 showEditProfile = showEditProfile,
+                profileImageUri = profileImageUri,
+                playerMoney = playerMoney,
                 onProfileClick = { showProfile = !showProfile }
             )
         },
@@ -120,14 +130,27 @@ fun MainNavigation() {
             color = Color(0xFFF7FAFC)
         ) {
             if (showEditProfile) {
-                EditProfileScreen(onBackClick = { showEditProfile = false })
+                EditProfileScreen(
+                    playerName = playerName,
+                    profileImageUri = profileImageUri,
+                    onPlayerNameChange = { playerName = it},
+                    onProfileImageChange = { profileImageUri = it },
+                    onBackClick = { showEditProfile = false }
+                )
             } else if (showProfile) {
-                ProfileScreen(onEditClick = { showEditProfile = true })
+                ProfileScreen(
+                    playerName = playerName,
+                    profileImageUri = profileImageUri,
+                    playerMoney = playerMoney,
+                    onEditClick = { showEditProfile = true })
             } else {
                 when (tab) {
                     Tab.Today -> TodayScreen()
                     Tab.Rewards -> RewardsScreen()
-                    Tab.Shop -> ShopScreen()
+                    Tab.Shop -> ShopScreen(
+                        playerMoney = playerMoney,
+                        onPurchase = { price -> playerMoney -= price }
+                    )
                 }
             }
         }
@@ -135,7 +158,14 @@ fun MainNavigation() {
 }
 
 @Composable
-fun TopStatusBar(currentTab: Tab, showProfile: Boolean, showEditProfile: Boolean, onProfileClick: () -> Unit) {
+fun TopStatusBar(
+    currentTab: Tab,
+    showProfile: Boolean,
+    showEditProfile: Boolean,
+    profileImageUri: Uri?,
+    playerMoney: Int,
+    onProfileClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -146,62 +176,80 @@ fun TopStatusBar(currentTab: Tab, showProfile: Boolean, showEditProfile: Boolean
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 32.dp),
+                .padding(start = 20.dp, top = 32.dp, end = 20.dp, bottom = 12.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top level - Profile Picture, OVERPOWERED Logo, Current Tabss
+            // Top level
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left - Profile Picture
-                Card(
-                    modifier = Modifier.size(32.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.2f)),
-                    onClick = onProfileClick
+                // Left side
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.CenterStart
                 ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                    Card(
+                        modifier = Modifier.size(32.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.2f)),
+                        onClick = onProfileClick
                     ) {
-                        Icon(
-                            Icons.Filled.Person,
-                            contentDescription = "Profile",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (profileImageUri != null) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(profileImageUri),
+                                    contentDescription = "Profile",
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(16.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Filled.Person,
+                                    contentDescription = "Profile",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
                     }
                 }
 
                 // Center - OVERPOWERED Logo
+                Text(
+                    text = "OVERPOWERED",
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                // Right side
                 Box(
                     modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.CenterEnd
                 ) {
                     Text(
-                        text = "OVERPOWERED",
+                        text = if (showEditProfile) {
+                            "Edit Profile"
+                        } else if (showProfile) {
+                            "Profile"
+                        } else {
+                            when(currentTab) {
+                                Tab.Today -> "Today"
+                                Tab.Rewards -> "Rewards"
+                                Tab.Shop -> "Shop"
+                            }
+                        },
                         color = Color.White,
-                        fontSize = 18.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
-
-                // Right - Current Tab
-                Text(
-                    text = if (showProfile) {
-                        "Profile"
-                    } else {
-                        when(currentTab) {
-                            Tab.Today -> "Today"
-                            Tab.Rewards -> "Rewards"
-                            Tab.Shop -> "Shop"
-                        }
-                    },
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
             }
 
             // Bottom level - EXP and Money
@@ -222,7 +270,7 @@ fun TopStatusBar(currentTab: Tab, showProfile: Boolean, showEditProfile: Boolean
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "playerExperiencePoints",
+                        text = "999",
                         color = Color.White,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
@@ -241,7 +289,7 @@ fun TopStatusBar(currentTab: Tab, showProfile: Boolean, showEditProfile: Boolean
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "playerMoney",
+                        text = playerMoney.toString(),
                         color = Color.White,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
@@ -264,6 +312,12 @@ fun MainNavigationPreview() {
 @Composable
 fun TopStatusBarPreview() {
     OVERPOWEREDTheme {
-        TopStatusBar(currentTab = Tab.Today, showProfile = false, showEditProfile = false, onProfileClick = {})
+        TopStatusBar(
+            currentTab = Tab.Today,
+            showProfile = false,
+            showEditProfile = false,
+            profileImageUri = null,
+            playerMoney = 0,
+            onProfileClick = {})
     }
 }

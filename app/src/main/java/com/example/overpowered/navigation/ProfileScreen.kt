@@ -9,15 +9,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
+import android.net.Uri
+import androidx.compose.foundation.Image
 
 @Composable
-fun ProfileScreen(onEditClick: () -> Unit) {
+fun ProfileScreen(playerName: String, profileImageUri: Uri?, playerMoney: Int, onEditClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -65,18 +68,29 @@ fun ProfileScreen(onEditClick: () -> Unit) {
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Filled.Person,
-                    contentDescription = "Profile Picture",
-                    tint = Color.White,
-                    modifier = Modifier.size(60.dp)
-                )
+                if (profileImageUri != null) {
+                    Image(
+                        painter = rememberAsyncImagePainter(profileImageUri),
+                        contentDescription = "Profile Picture",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(60.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        Icons.Filled.Person,
+                        contentDescription = "Profile Picture",
+                        tint = Color.White,
+                        modifier = Modifier.size(60.dp)
+                    )
+                }
             }
         }
 
         // User info
         Text(
-            text = "playerName",
+            text = playerName,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF4A5568)
@@ -99,18 +113,18 @@ fun ProfileScreen(onEditClick: () -> Unit) {
                     color = Color(0xFF4A5568)
                 )
 
-                // EXP Row
+                // Level Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Experience Points",
+                        text = "Player Level",
                         fontSize = 16.sp,
                         color = Color(0xFF4A5568)
                     )
                     Text(
-                        text = "playerExperiencePoints",
+                        text = "playerLevel",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF667EEA)
@@ -128,25 +142,25 @@ fun ProfileScreen(onEditClick: () -> Unit) {
                         color = Color(0xFF4A5568)
                     )
                     Text(
-                        text = "playerMoney",
+                        text = "$$playerMoney",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF48BB78)
                     )
                 }
 
-                // Level Row
+                // EXP Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Level",
+                        text = "Experience Points",
                         fontSize = 16.sp,
                         color = Color(0xFF4A5568)
                     )
                     Text(
-                        text = "playerLevel",
+                        text = "playerExperiencePoints",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFED8936)
