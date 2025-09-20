@@ -37,6 +37,7 @@ fun MainNavigation() {
     var playerName by remember { mutableStateOf("Player Name") }
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
     var playerMoney by remember { mutableStateOf(100) } // Starting with $100 for testing
+    var purchasedItems by remember { mutableStateOf(setOf<String>()) }
 
     Scaffold(
         topBar = {
@@ -149,7 +150,11 @@ fun MainNavigation() {
                     Tab.Rewards -> RewardsScreen()
                     Tab.Shop -> ShopScreen(
                         playerMoney = playerMoney,
-                        onPurchase = { price -> playerMoney -= price }
+                        purchasedItems = purchasedItems,
+                        onPurchase = { price, itemId ->
+                            playerMoney -= price
+                            purchasedItems = purchasedItems + itemId
+                        }
                     )
                 }
             }
