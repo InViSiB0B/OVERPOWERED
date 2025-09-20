@@ -30,73 +30,117 @@ data class ShopItem(
 @Composable
 fun ShopScreen(
     playerMoney: Int,
-    onPurchase: (Int) -> Unit
+    purchasedItems: Set<String>,
+    onPurchase: (Int, String) -> Unit
 ) {
-    // Example Items for testing
+    // Sample data for each category - filter out purchased items
     val frames = listOf(
         ShopItem("frame_1", "Autumn", 10, "Frames", Color(0xFFFF6B35)),
         ShopItem("frame_2", "Confetti", 10, "Frames", Color(0xFF4ECDC4)),
         ShopItem("frame_3", "Classic", 10, "Frames", Color(0xFF45B7D1))
-    )
+    ).filter { it.id !in purchasedItems }
 
     val titles = listOf(
         ShopItem("title_1", "Overpowered", 5, "Titles", Color(0xFF96CEB4)),
         ShopItem("title_2", "Legendary", 5, "Titles", Color(0xFFFECB52)),
         ShopItem("title_3", "Epic", 5, "Titles", Color(0xFFFF6B6B))
-    )
+    ).filter { it.id !in purchasedItems }
 
     val themes = listOf(
         ShopItem("theme_1", "Ocean", 15, "Themes", Color(0xFF4A90E2)),
         ShopItem("theme_2", "Flame", 15, "Themes", Color(0xFFE74C3C)),
         ShopItem("theme_3", "Void", 15, "Themes", Color(0xFF2C3E50))
-    )
+    ).filter { it.id !in purchasedItems }
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+        contentPadding = PaddingValues(bottom = 100.dp)
     ) {
         item {
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // Frames Section
-        item {
-            ShopCategory(
-                title = "Frames:",
-                items = frames,
-                playerMoney = playerMoney,
-                onPurchase = onPurchase
-            )
+        // Frames Section - only show if items available
+        if (frames.isNotEmpty()) {
+            item {
+                ShopCategory(
+                    title = "Frames:",
+                    items = frames,
+                    playerMoney = playerMoney,
+                    onPurchase = onPurchase
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
 
-        item {
-            Spacer(modifier = Modifier.height(8.dp))
+        // Titles Section - only show if items available
+        if (titles.isNotEmpty()) {
+            item {
+                ShopCategory(
+                    title = "Titles:",
+                    items = titles,
+                    playerMoney = playerMoney,
+                    onPurchase = onPurchase
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
 
-        // Titles Section
-        item {
-            ShopCategory(
-                title = "Titles:",
-                items = titles,
-                playerMoney = playerMoney,
-                onPurchase = onPurchase
-            )
+        // Themes Section - only show if items available
+        if (themes.isNotEmpty()) {
+            item {
+                ShopCategory(
+                    title = "Themes:",
+                    items = themes,
+                    playerMoney = playerMoney,
+                    onPurchase = onPurchase
+                )
+            }
         }
 
-        item {
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        // Themes Section
-        item {
-            ShopCategory(
-                title = "Themes:",
-                items = themes,
-                playerMoney = playerMoney,
-                onPurchase = onPurchase
-            )
+        // Show message when all items purchased
+        if (frames.isEmpty() && titles.isEmpty() && themes.isEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "🎉",
+                            fontSize = 48.sp
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "All Items Purchased!",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF4A5568),
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "You've bought everything in the shop. Check back later for new items!",
+                            fontSize = 14.sp,
+                            color = Color(0xFF718096),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
         }
 
         item {
@@ -110,7 +154,7 @@ fun ShopCategory(
     title: String,
     items: List<ShopItem>,
     playerMoney: Int,
-    onPurchase: (Int) -> Unit
+    onPurchase: (Int, String) -> Unit
 ) {
     Column {
         Text(
@@ -140,7 +184,7 @@ fun ShopCategory(
 fun ShopItemCard(
     item: ShopItem,
     playerMoney: Int,
-    onPurchase: (Int) -> Unit
+    onPurchase: (Int, String) -> Unit
 ) {
     var showInsufficientFundsDialog by remember { mutableStateOf(false) }
     val canAfford = playerMoney >= item.price
@@ -200,7 +244,7 @@ fun ShopItemCard(
         Button(
             onClick = {
                 if (canAfford) {
-                    onPurchase(item.price)
+                    onPurchase(item.price, item.id)
                 } else {
                     showInsufficientFundsDialog = true
                 }
@@ -248,7 +292,7 @@ fun ShopItemCard(
             text = {
                 Column {
                     Text(
-                        text = "You need ${item.price} but only have ${playerMoney}.",
+                        text = "You need $${item.price} but only have $${playerMoney}.",
                         fontSize = 16.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
