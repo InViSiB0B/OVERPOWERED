@@ -38,6 +38,9 @@ fun MainNavigation() {
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
     var playerMoney by remember { mutableStateOf(100) } // Starting with $100 for testing
     var purchasedItems by remember { mutableStateOf(setOf<String>()) }
+    var selectedFrame by remember { mutableStateOf<String?>(null) }
+    var selectedTitle by remember { mutableStateOf<String?>(null) }
+    var selectedTheme by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -134,8 +137,15 @@ fun MainNavigation() {
                 EditProfileScreen(
                     playerName = playerName,
                     profileImageUri = profileImageUri,
+                    purchasedItems = purchasedItems,
+                    selectedFrame = selectedFrame,
+                    selectedTitle = selectedTitle,
+                    selectedTheme = selectedTheme,
                     onPlayerNameChange = { playerName = it},
                     onProfileImageChange = { profileImageUri = it },
+                    onFrameSelect = { selectedFrame = it },
+                    onTitleSelect = { selectedTitle = it },
+                    onThemeSelect = { selectedTheme = it },
                     onBackClick = { showEditProfile = false }
                 )
             } else if (showProfile) {
