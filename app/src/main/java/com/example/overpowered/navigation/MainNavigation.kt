@@ -195,7 +195,7 @@ fun TopStatusBar(
     onProfileClick: () -> Unit
 ) {
 
-    // Calculate player level based on experience (super placeholder right now: level = experience / 100 + 1)
+    // Calculate player level based on experience (super placeholder right now: level = experience / 100 + 1).
     val playerLevel = (playerExperience / 100) + 1
 
     Card(
