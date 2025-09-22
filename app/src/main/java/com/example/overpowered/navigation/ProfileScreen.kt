@@ -20,7 +20,16 @@ import android.net.Uri
 import androidx.compose.foundation.Image
 
 @Composable
-fun ProfileScreen(playerName: String, profileImageUri: Uri?, playerMoney: Int, onEditClick: () -> Unit) {
+fun ProfileScreen(
+    playerName: String,
+    profileImageUri: Uri?,
+    playerMoney: Int,
+    playerExperience: Int,
+    onEditClick: () -> Unit
+) {
+    // Calculate player level based on experience (super placeholder right now: level = experience / 100 + 1)
+    val playerLevel = (playerExperience / 100) + 1
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -124,7 +133,7 @@ fun ProfileScreen(playerName: String, profileImageUri: Uri?, playerMoney: Int, o
                         color = Color(0xFF4A5568)
                     )
                     Text(
-                        text = "playerLevel",
+                        text = playerLevel.toString(),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF667EEA)
@@ -160,7 +169,7 @@ fun ProfileScreen(playerName: String, profileImageUri: Uri?, playerMoney: Int, o
                         color = Color(0xFF4A5568)
                     )
                     Text(
-                        text = "playerExperiencePoints",
+                        text = playerExperience.toString(),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFED8936)
