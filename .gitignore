@@ -52,3 +52,7 @@ obj/
 
 # Ignore supabase keys if you kept them in a file
 keys.properties
+
+.env
+.env.*
+.gitignore

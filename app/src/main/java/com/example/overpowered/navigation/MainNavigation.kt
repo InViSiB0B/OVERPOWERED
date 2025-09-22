@@ -16,13 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.overpowered.ui.theme.OVERPOWEREDTheme
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.rememberAsyncImagePainter
@@ -91,7 +91,7 @@ fun MainNavigation() {
                             tab = Tab.Rewards
                         }
                     ) {
-                        Icon(Icons.Filled.Person, contentDescription = "Rewards", modifier = Modifier.size(28.dp))
+                        Icon(Icons.Filled.Home, contentDescription = "Rewards", modifier = Modifier.size(28.dp))
                     }
 
                     Spacer(Modifier.weight(.5f)) // make room for center FAB
@@ -330,29 +330,5 @@ fun TopStatusBar(
                 }
             }
         }
-    }
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun MainNavigationPreview() {
-    OVERPOWEREDTheme {
-        MainNavigation()
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun TopStatusBarPreview() {
-    OVERPOWEREDTheme {
-        TopStatusBar(
-            currentTab = Tab.Today,
-            showProfile = false,
-            showEditProfile = false,
-            profileImageUri = null,
-            playerMoney = 0,
-            playerExperience = 0,
-            onProfileClick = {})
     }
 }
