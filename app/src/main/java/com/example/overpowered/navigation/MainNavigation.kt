@@ -48,6 +48,9 @@ fun MainNavigation() {
     var selectedTitle by remember { mutableStateOf<String?>(null) }
     var selectedTheme by remember { mutableStateOf<String?>(null) }
 
+    // Task state
+    val tasksList = remember { mutableStateListOf<Task>() }
+
     // Task completion callback
     val onTaskComplete: (Int, Int) -> Unit = { experienceReward: Int, moneyReward: Int ->
         playerExperience = playerExperience + experienceReward
@@ -166,6 +169,7 @@ fun MainNavigation() {
             } else {
                 when (tab) {
                     Tab.Today -> TodayScreen(
+                        tasksList = tasksList,
                         onTaskComplete = onTaskComplete
                     )
                     Tab.Rewards -> RewardsScreen()

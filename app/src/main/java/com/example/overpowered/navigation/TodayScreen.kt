@@ -42,11 +42,13 @@ data class TaskReward(
 )
 
 @Composable
-fun TodayScreen(onTaskComplete: (Int, Int) -> Unit = { _, _ -> }) {
+fun TodayScreen(
+    tasksList: MutableList<Task> = mutableListOf(),
+    onTaskComplete: (Int, Int) -> Unit = { _, _ -> }
+) {
     var isTaskInputVisible by remember { mutableStateOf(false) }
     var taskTitle by remember { mutableStateOf("") }
     var taskDescription by remember { mutableStateOf("") }
-    val tasksList = remember { mutableStateListOf<Task>() }
 
     // Reward dialog state
     var showRewardDialog by remember { mutableStateOf(false) }
@@ -224,6 +226,7 @@ fun TaskItem(task: Task, onComplete: () -> Unit, onDelete: () -> Unit) {
                     Text(text = it, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                 }
             }
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -236,11 +239,15 @@ fun TaskItem(task: Task, onComplete: () -> Unit, onDelete: () -> Unit) {
                     Icon(
                         imageVector = Icons.Filled.CheckCircle,
                         contentDescription = "Complete Task",
-                        tint = Color(0xFF48BB78)
+                        tint = Color(0xFF48BB78) // Green color for completion
                     )
                 }
 
-                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
+                // Delete button
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(24.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Filled.Delete,
                         contentDescription = "Delete Task",
@@ -332,7 +339,7 @@ fun RewardDialog(
                                     text = "+$experienceReward",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFED8936)
+                                    color = Color(0xFFED8936) // Orange for XP
                                 )
                                 Text(
                                     text = "Experience",
@@ -347,7 +354,7 @@ fun RewardDialog(
                                     text = "+$$moneyReward",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF48BB78)
+                                    color = Color(0xFF48BB78) // Green for money
                                 )
                                 Text(
                                     text = "Money",
