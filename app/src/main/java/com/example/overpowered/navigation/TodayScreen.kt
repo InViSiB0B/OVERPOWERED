@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.sp
 
 // Data class to represent a task
 data class Task(
-    val id: Long = System.currentTimeMillis(), // Simple unique ID
+    val id: Long = System.currentTimeMillis(), // Simple unique ID.
     val title: String,
     val description: String? = null
 )
