@@ -35,7 +35,6 @@ People with ADHD often struggle with traditional productivity tools because they
 - **Level Progression**: Unlock new rewards, themes, and customizations as you advance
 - **Achievement Gallery**: Collect badges and milestones for various accomplishments
 - **Daily Streaks**: Bonus rewards for maintaining consistent completion habits
-- **Visual Progress**: Satisfying progress bars and completion animations
 
 ## Technologies
 
