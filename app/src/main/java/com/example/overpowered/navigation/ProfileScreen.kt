@@ -16,13 +16,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
-import android.net.Uri
 import androidx.compose.foundation.Image
 
 @Composable
 fun ProfileScreen(
     playerName: String,
-    profileImageUri: Uri?,
+    profileImageUrl: String?,
     playerMoney: Int,
     playerExperience: Int,
     onEditClick: () -> Unit
@@ -77,9 +76,9 @@ fun ProfileScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                if (profileImageUri != null) {
+                if (profileImageUrl != null) {
                     Image(
-                        painter = rememberAsyncImagePainter(profileImageUri),
+                        painter = rememberAsyncImagePainter(profileImageUrl),
                         contentDescription = "Profile Picture",
                         modifier = Modifier
                             .fillMaxSize()

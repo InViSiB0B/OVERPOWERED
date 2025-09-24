@@ -28,23 +28,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// Data class to represent a task
+// Data class to represent a task (local UI model)
 data class Task(
-    val id: Long = System.currentTimeMillis(), // Simple unique ID
+    val id: Long = System.currentTimeMillis(),
     val title: String,
     val description: String? = null
 )
 
-// Rewards data class
-data class TaskReward(
-    val experiencePoints: Int = 10,
-    val money: Int = 10
-)
-
 @Composable
 fun TodayScreen(
-    tasksList: MutableList<Task> = mutableListOf(),
-    onTaskComplete: (Int, Int) -> Unit = { _, _ -> }
+    tasks: List<Task> = emptyList(),
+    onAddTask: (String, String?) -> Unit = { _, _ -> },
+    onCompleteTask: (Task) -> Unit = { _ -> },
+    onDeleteTask: (Task) -> Unit = { _ -> }
 ) {
     var isTaskInputVisible by remember { mutableStateOf(false) }
     var taskTitle by remember { mutableStateOf("") }
@@ -53,7 +49,6 @@ fun TodayScreen(
     // Reward dialog state
     var showRewardDialog by remember { mutableStateOf(false) }
     var completedTaskTitle by remember { mutableStateOf("") }
-    val currentReward = TaskReward() // 10 XP, 10 Money for now
 
     Column(
         modifier = Modifier
@@ -138,11 +133,9 @@ fun TodayScreen(
                         Button(
                             onClick = {
                                 if (taskTitle.isNotBlank()) {
-                                    tasksList.add(
-                                        Task(
-                                            title = taskTitle,
-                                            description = taskDescription.takeIf { it.isNotBlank() }
-                                        )
+                                    onAddTask(
+                                        taskTitle,
+                                        taskDescription.takeIf { it.isNotBlank() }
                                     )
                                     taskTitle = "" // Clear input
                                     taskDescription = "" // Clear input
@@ -162,7 +155,7 @@ fun TodayScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         // Displaying the list of tasks
-        if (tasksList.isEmpty()) {
+        if (tasks.isEmpty()) {
             Text(
                 text = "No tasks yet. Add some!",
                 style = MaterialTheme.typography.bodyLarge,
@@ -175,16 +168,15 @@ fun TodayScreen(
                 modifier = Modifier.padding(bottom = 8.dp).align(Alignment.Start)
             )
             LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                items(tasksList, key = { task -> task.id }) { task ->
+                items(tasks, key = { task -> task.id }) { task ->
                     TaskItem(
                         task = task,
                         onComplete = {
                             completedTaskTitle = task.title
-                            tasksList.remove(task)
+                            onCompleteTask(task)
                             showRewardDialog = true
-                            onTaskComplete(currentReward.experiencePoints, currentReward.money)
                         },
-                        onDelete = { tasksList.remove(task) }
+                        onDelete = { onDeleteTask(task) }
                     )
                     HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
                 }
@@ -196,8 +188,8 @@ fun TodayScreen(
     if (showRewardDialog) {
         RewardDialog(
             taskTitle = completedTaskTitle,
-            experienceReward = currentReward.experiencePoints,
-            moneyReward = currentReward.money,
+            experienceReward = 10,
+            moneyReward = 10,
             onDismiss = { showRewardDialog = false }
         )
     }
@@ -339,7 +331,7 @@ fun RewardDialog(
                                     text = "+$experienceReward",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFED8936) // Orange for XP
+                                    color = Color(0xFFED8936)
                                 )
                                 Text(
                                     text = "Experience",
@@ -354,7 +346,7 @@ fun RewardDialog(
                                     text = "+$$moneyReward",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF48BB78) // Green for money
+                                    color = Color(0xFF48BB78)
                                 )
                                 Text(
                                     text = "Money",

@@ -1,9 +1,6 @@
 package com.example.overpowered.navigation
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -18,8 +15,6 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.overpowered.ui.theme.OVERPOWEREDTheme
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.Home
@@ -29,32 +24,30 @@ import coil.compose.rememberAsyncImagePainter
 import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.contentColorFor
 import androidx.compose.ui.zIndex
+import com.example.overpowered.viewmodel.AppViewModel
 
 enum class Tab { Today, Rewards, Shop }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainNavigation() {
+fun MainNavigation(
+    viewModel: AppViewModel = AppViewModel()
+) {
     var tab by remember { mutableStateOf(Tab.Today) }
     var showProfile by remember { mutableStateOf(false) }
     var showEditProfile by remember { mutableStateOf(false) }
-    var playerName by remember { mutableStateOf("Player Name") }
-    var profileImageUri by remember { mutableStateOf<Uri?>(null) }
-    var playerMoney by remember { mutableStateOf(100) } // Starting with $100 for testing
-    var playerExperience by remember { mutableStateOf(0) }
-    var playerLevel by remember { mutableStateOf(1) }
-    var purchasedItems by remember { mutableStateOf(setOf<String>()) }
-    var selectedFrame by remember { mutableStateOf<String?>(null) }
-    var selectedTitle by remember { mutableStateOf<String?>(null) }
-    var selectedTheme by remember { mutableStateOf<String?>(null) }
 
-    // Task state
-    val tasksList = remember { mutableStateListOf<Task>() }
+    // Observe ViewModel state
+    val userProfile by viewModel.userProfile.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val tasks by viewModel.localTasks.collectAsState()
 
-    // Task completion callback
-    val onTaskComplete: (Int, Int) -> Unit = { experienceReward: Int, moneyReward: Int ->
-        playerExperience = playerExperience + experienceReward
-        playerMoney = playerMoney + moneyReward
+    // Show error messages
+    error?.let { errorMessage ->
+        LaunchedEffect(errorMessage) {
+            viewModel.clearError()
+        }
     }
 
     Scaffold(
@@ -63,9 +56,9 @@ fun MainNavigation() {
                 currentTab = tab,
                 showProfile = showProfile,
                 showEditProfile = showEditProfile,
-                profileImageUri = profileImageUri,
-                playerMoney = playerMoney,
-                playerExperience = playerExperience,
+                profileImageUrl = userProfile.profileImageUrl,
+                playerMoney = userProfile.playerMoney ?: 100,
+                playerExperience = userProfile.playerExperience ?: 0,
                 onProfileClick = { showProfile = !showProfile }
             )
         },
@@ -75,7 +68,6 @@ fun MainNavigation() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()
-
             ) {
                 BottomAppBar(
                     modifier = Modifier
@@ -84,13 +76,16 @@ fun MainNavigation() {
                     containerColor = Color(0xFF4A5568),
                     contentColor = Color.White,
                     tonalElevation = 4.dp,
-                    windowInsets = BottomAppBarDefaults.windowInsets, // use default window insets
+                    windowInsets = BottomAppBarDefaults.windowInsets,
                 ) {
                     // Left action
                     Spacer(Modifier.weight(.1f))
                     IconButton(
                         onClick = {
-                            if (showProfile || showEditProfile) { showProfile = false; showEditProfile = false }
+                            if (showProfile || showEditProfile) {
+                                showProfile = false
+                                showEditProfile = false
+                            }
                             tab = Tab.Rewards
                         }
                     ) {
@@ -102,7 +97,10 @@ fun MainNavigation() {
                     // Right action
                     IconButton(
                         onClick = {
-                            if (showProfile || showEditProfile) { showProfile = false; showEditProfile = false }
+                            if (showProfile || showEditProfile) {
+                                showProfile = false
+                                showEditProfile = false
+                            }
                             tab = Tab.Shop
                         }
                     ) {
@@ -114,14 +112,17 @@ fun MainNavigation() {
                 // The oversized center FAB
                 LargeFloatingActionButton(
                     onClick = {
-                        if (showProfile || showEditProfile) { showProfile = false; showEditProfile = false }
+                        if (showProfile || showEditProfile) {
+                            showProfile = false
+                            showEditProfile = false
+                        }
                         tab = Tab.Today
                     },
                     modifier = Modifier
-                        .align(Alignment.TopCenter)    // center horizontally relative to the bar
-                        .offset(y = (-32).dp)         // negative to overflow above the bar
-                        .size(96.dp)           // make it big
-                        .zIndex(1f),        // ensure it draws above the bar
+                        .align(Alignment.TopCenter)
+                        .offset(y = (-32).dp)
+                        .size(96.dp)
+                        .zIndex(1f),
                     shape = CircleShape,
                     containerColor = if (tab == Tab.Today && !showProfile)
                         MaterialTheme.colorScheme.primary
@@ -144,41 +145,75 @@ fun MainNavigation() {
                 .padding(innerPadding),
             color = Color(0xFFF7FAFC)
         ) {
-            if (showEditProfile) {
+            if (isLoading) {
+                // Show loading screen
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator(color = Color(0xFF667EEA))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Loading your data...",
+                            color = Color(0xFF4A5568)
+                        )
+                    }
+                }
+            } else if (showEditProfile) {
                 EditProfileScreen(
-                    playerName = playerName,
-                    profileImageUri = profileImageUri,
-                    purchasedItems = purchasedItems,
-                    selectedFrame = selectedFrame,
-                    selectedTitle = selectedTitle,
-                    selectedTheme = selectedTheme,
-                    onPlayerNameChange = { playerName = it},
-                    onProfileImageChange = { profileImageUri = it },
-                    onFrameSelect = { selectedFrame = it },
-                    onTitleSelect = { selectedTitle = it },
-                    onThemeSelect = { selectedTheme = it },
+                    playerName = userProfile.playerName ?: "Player Name",
+                    profileImageUrl = userProfile.profileImageUrl,
+                    purchasedItems = userProfile.purchasedItems?.toSet() ?: emptySet(),
+                    selectedFrame = userProfile.selectedFrame,
+                    selectedTitle = userProfile.selectedTitle,
+                    selectedTheme = userProfile.selectedTheme,
+                    onPlayerNameChange = { viewModel.updatePlayerName(it) },
+                    onProfileImageChange = { uri ->
+                        uri?.let { viewModel.uploadProfileImage(it) }
+                    },
+                    onFrameSelect = { viewModel.updateCustomization(selectedFrame = it) },
+                    onTitleSelect = { viewModel.updateCustomization(selectedTitle = it) },
+                    onThemeSelect = { viewModel.updateCustomization(selectedTheme = it) },
                     onBackClick = { showEditProfile = false }
                 )
             } else if (showProfile) {
                 ProfileScreen(
-                    playerName = playerName,
-                    profileImageUri = profileImageUri,
-                    playerMoney = playerMoney,
-                    playerExperience = playerExperience,
-                    onEditClick = { showEditProfile = true })
+                    playerName = userProfile.playerName ?: "Player Name",
+                    profileImageUrl = userProfile.profileImageUrl,
+                    playerMoney = userProfile.playerMoney ?: 100,
+                    playerExperience = userProfile.playerExperience ?: 0,
+                    onEditClick = { showEditProfile = true }
+                )
             } else {
                 when (tab) {
                     Tab.Today -> TodayScreen(
-                        tasksList = tasksList,
-                        onTaskComplete = onTaskComplete
+                        tasks = tasks,
+                        onAddTask = { title, description ->
+                            viewModel.addTask(title, description)
+                        },
+                        onCompleteTask = { task ->
+                            // Find the Firebase task ID
+                            val firebaseTask = viewModel.findFirebaseTaskById(task.id)
+                            firebaseTask?.let {
+                                viewModel.completeTask(it.id, experienceReward = 10, moneyReward = 10)
+                            }
+                        },
+                        onDeleteTask = { task ->
+                            val firebaseTask = viewModel.findFirebaseTaskById(task.id)
+                            firebaseTask?.let {
+                                viewModel.deleteTask(it.id)
+                            }
+                        }
                     )
                     Tab.Rewards -> RewardsScreen()
                     Tab.Shop -> ShopScreen(
-                        playerMoney = playerMoney,
-                        purchasedItems = purchasedItems,
+                        playerMoney = userProfile.playerMoney ?: 100,
+                        purchasedItems = userProfile.purchasedItems?.toSet() ?: emptySet(),
                         onPurchase = { price, itemId ->
-                            playerMoney -= price
-                            purchasedItems = purchasedItems + itemId
+                            viewModel.purchaseItem(itemId, price)
                         }
                     )
                 }
@@ -192,13 +227,12 @@ fun TopStatusBar(
     currentTab: Tab,
     showProfile: Boolean,
     showEditProfile: Boolean,
-    profileImageUri: Uri?,
+    profileImageUrl: String?,
     playerMoney: Int,
     playerExperience: Int,
     onProfileClick: () -> Unit
 ) {
-
-    // Calculate player level based on experience (super placeholder right now: level = experience / 100 + 1).
+    // Calculate player level based on experience
     val playerLevel = (playerExperience / 100) + 1
 
     Card(
@@ -251,7 +285,7 @@ fun TopStatusBar(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Left side
+                    // Left side - Profile picture
                     Box(
                         modifier = Modifier.weight(1f),
                         contentAlignment = Alignment.CenterStart
@@ -266,9 +300,9 @@ fun TopStatusBar(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
-                                if (profileImageUri != null) {
+                                if (profileImageUrl != null) {
                                     Image(
-                                        painter = rememberAsyncImagePainter(profileImageUri),
+                                        painter = rememberAsyncImagePainter(profileImageUrl),
                                         contentDescription = "Profile",
                                         modifier = Modifier
                                             .fillMaxSize()
