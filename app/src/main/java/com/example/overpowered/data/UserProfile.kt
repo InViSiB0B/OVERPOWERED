@@ -21,13 +21,13 @@ data class UserProfile(
     val createdAt: Date? = null
 )
 
-// Task data model for Firebase - FIXED VERSION
+// Task data model for Firebase
 data class FirebaseTask(
-    val id: String = "", // Remove @DocumentId - let Firestore handle this
+    val id: String = "",
     val title: String = "",
     val description: String? = null,
     val isCompleted: Boolean = false,
-    val createdAt: Date? = null, // Remove @ServerTimestamp and set manually
+    val createdAt: Date? = null, //
     val completedAt: Date? = null,
     val userId: String = ""
 )
