@@ -28,7 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// Data class to represent a task (local UI model)
+// Data class to represent a task (local UI model).
 data class Task(
     val id: Long = System.currentTimeMillis(),
     val title: String,
