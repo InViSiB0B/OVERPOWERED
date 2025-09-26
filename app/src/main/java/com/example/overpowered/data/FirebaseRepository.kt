@@ -204,6 +204,35 @@ class FirebaseRepository {
         }
     }
 
+    fun observeCompletedTasks(): kotlinx.coroutines.flow.Flow<FirebaseResult<List<FirebaseTask>>> {
+        val userId = getCurrentUserId()
+        if (userId == null) return kotlinx.coroutines.flow.flowOf(FirebaseResult.Error(Exception("User not authenticated")))
+
+        return kotlinx.coroutines.flow.callbackFlow {
+            val listener = FirebaseFirestore.getInstance()
+                .collection("tasks")
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("isCompleted", true)
+                .orderBy("completedAt", com.google.firebase.firestore.Query.Direction.DESCENDING) // newest first
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        trySend(FirebaseResult.Error(error)); return@addSnapshotListener
+                    }
+                    if (snapshot != null) {
+                        try {
+                            val tasks = snapshot.documents.mapNotNull { doc ->
+                                doc.toObject(FirebaseTask::class.java)?.copy(id = doc.id)
+                            }
+                            trySend(FirebaseResult.Success(tasks))
+                        } catch (e: Exception) {
+                            trySend(FirebaseResult.Error(e))
+                        }
+                    }
+                }
+            awaitClose { listener.remove() }
+        }
+    }
+
     // Profile image operations
     suspend fun uploadProfileImage(imageUri: Uri): FirebaseResult<String> {
         val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
