@@ -1,0 +1,58 @@
+# Gradle
+.gradle/
+build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Local configuration
+/local.properties
+/.idea
+/.idea/*
+.idea/**
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Generated files
+captures/
+outputs/
+generated/
+
+# Log files
+*.log
+
+# Android Studio
+*.iml
+.idea/
+.cxx/
+
+# Keystore files (don’t commit your signing keys!)
+*.jks
+*.keystore
+
+# Kotlin/Java
+*.class
+*.jar
+*.war
+*.ear
+
+# Crashlytics
+app/fabric.properties
+
+# NDK
+obj/
+
+# Other
+*.apk
+*.ap_
+*.dex
+*.so
+*.hprof
+
+# Ignore supabase keys if you kept them in a file
+keys.properties
+
+.env
+.env.*
+.gitignore
