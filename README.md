@@ -23,6 +23,13 @@ People with ADHD often struggle with traditional productivity tools because they
 - **Clean Daily Interface**: Daily check on in progress and track ongoing tasks
 - **Instant Gratification**: The User is awarded for completing tasks with profile customization options and prestige
 
+### Beta
+
+- **Enhanced Task Tracking**: The User can set long term goals that short term tasks will contribute to, with progress bars to visualize growth
+- **Friends and Leaderboards**: Users can add other users to their friends list to compete in Leaderboards for task completion, and level
+- **User Friendly Tutorial**: Handy walkthrough that guides first time users through the different features and functionalities of the app
+
+
 ### ADHD-Specific Features
 
 - **Just-in-Time Motivation**: Rewards the "now or never" motivation style that drives ADHD action
