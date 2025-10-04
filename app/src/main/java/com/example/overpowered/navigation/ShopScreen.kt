@@ -29,7 +29,7 @@ data class ShopItem(
     val description: String = ""
 )
 
-// Catalog of all available items
+// Catalog of all available items (placeholder still)
 object ShopCatalog {
     val allFrames = listOf(
         ShopItem("frame_1", "Autumn", 10, "Frames", Color(0xFFFF6B35)),
