@@ -69,7 +69,7 @@ fun TodayScreen(
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(24.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(
@@ -107,7 +107,7 @@ fun TodayScreen(
                     enter = expandVertically(animationSpec = tween(durationMillis = 300)),
                     exit = shrinkVertically(animationSpec = tween(durationMillis = 300))
                 ) {
-                    Column(modifier = Modifier.padding(top = 16.dp)) {
+                    Column(modifier = Modifier.padding(top = 32.dp)) {
                         OutlinedTextField(
                             value = taskTitle,
                             onValueChange = { taskTitle = it },
@@ -209,7 +209,7 @@ fun TaskItem(task: Task, onComplete: () -> Unit, onDelete: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -288,7 +288,7 @@ fun RewardDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         title = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -333,7 +333,7 @@ fun RewardDialog(
                 // Rewards section
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Column(
