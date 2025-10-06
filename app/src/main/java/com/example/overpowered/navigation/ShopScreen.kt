@@ -17,6 +17,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.util.*
+import kotlin.random.Random
 
 data class ShopItem(
     val id: String,
@@ -27,30 +29,76 @@ data class ShopItem(
     val description: String = ""
 )
 
+// Catalog of all available items (placeholder still)
+object ShopCatalog {
+    val allFrames = listOf(
+        ShopItem("frame_1", "Autumn", 10, "Frames", Color(0xFFFF6B35)),
+        ShopItem("frame_2", "Confetti", 10, "Frames", Color(0xFF4ECDC4)),
+        ShopItem("frame_3", "Classic", 10, "Frames", Color(0xFF45B7D1)),
+        ShopItem("frame_4", "Sunset", 10, "Frames", Color(0xFFFF9A56)),
+        ShopItem("frame_5", "Ocean", 10, "Frames", Color(0xFF3498DB)),
+        ShopItem("frame_6", "Forest", 10, "Frames", Color(0xFF27AE60)),
+        ShopItem("frame_7", "Midnight", 10, "Frames", Color(0xFF2C3E50)),
+        ShopItem("frame_8", "Rose Gold", 10, "Frames", Color(0xFFE91E63)),
+    )
+
+    val allTitles = listOf(
+        ShopItem("title_1", "Overpowered", 5, "Titles", Color(0xFF96CEB4)),
+        ShopItem("title_2", "Legendary", 5, "Titles", Color(0xFFFECB52)),
+        ShopItem("title_3", "Epic", 5, "Titles", Color(0xFFFF6B6B)),
+        ShopItem("title_4", "Master", 5, "Titles", Color(0xFF9B59B6)),
+        ShopItem("title_5", "Champion", 5, "Titles", Color(0xFFF39C12)),
+        ShopItem("title_6", "Elite", 5, "Titles", Color(0xFF1ABC9C)),
+        ShopItem("title_7", "Supreme", 5, "Titles", Color(0xFFE74C3C)),
+        ShopItem("title_8", "Divine", 5, "Titles", Color(0xFFFDD835)),
+    )
+
+    val allThemes = listOf(
+        ShopItem("theme_1", "Ocean", 15, "Themes", Color(0xFF4A90E2)),
+        ShopItem("theme_2", "Flame", 15, "Themes", Color(0xFFE74C3C)),
+        ShopItem("theme_3", "Void", 15, "Themes", Color(0xFF2C3E50)),
+        ShopItem("theme_4", "Aurora", 15, "Themes", Color(0xFF9C27B0)),
+        ShopItem("theme_5", "Desert", 15, "Themes", Color(0xFFE67E22)),
+        ShopItem("theme_6", "Frost", 15, "Themes", Color(0xFF00BCD4)),
+        ShopItem("theme_7", "Jungle", 15, "Themes", Color(0xFF4CAF50)),
+        ShopItem("theme_8", "Storm", 15, "Themes", Color(0xFF607D8B)),
+    )
+}
+
+// Get today's date in EST for shop rotation
+fun getTodayDateEST(): String {
+    val calendar = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"))
+    return "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH)}-${calendar.get(Calendar.DAY_OF_MONTH)}"
+}
+
+// Get daily shop rotation based on date seed
+fun getDailyShopItems(): Triple<List<ShopItem>, List<ShopItem>, List<ShopItem>> {
+    val dateSeed = getTodayDateEST().hashCode().toLong()
+    val random = Random(dateSeed)
+
+    // Select 5 random items from each category
+    val dailyFrames = ShopCatalog.allFrames.shuffled(random).take(5)
+    val dailyTitles = ShopCatalog.allTitles.shuffled(random).take(5)
+    val dailyThemes = ShopCatalog.allThemes.shuffled(random).take(5)
+
+    return Triple(dailyFrames, dailyTitles, dailyThemes)
+}
+
 @Composable
 fun ShopScreen(
     playerMoney: Int,
     purchasedItems: Set<String>,
     onPurchase: (Int, String) -> Unit
 ) {
-    // Sample data for each category - filter out purchased items
-    val frames = listOf(
-        ShopItem("frame_1", "Autumn", 10, "Frames", Color(0xFFFF6B35)),
-        ShopItem("frame_2", "Confetti", 10, "Frames", Color(0xFF4ECDC4)),
-        ShopItem("frame_3", "Classic", 10, "Frames", Color(0xFF45B7D1))
-    ).filter { it.id !in purchasedItems }
+    // Get today's shop rotation
+    val (allFrames, allTitles, allThemes) = remember(getTodayDateEST()) {
+        getDailyShopItems()
+    }
 
-    val titles = listOf(
-        ShopItem("title_1", "Overpowered", 5, "Titles", Color(0xFF96CEB4)),
-        ShopItem("title_2", "Legendary", 5, "Titles", Color(0xFFFECB52)),
-        ShopItem("title_3", "Epic", 5, "Titles", Color(0xFFFF6B6B))
-    ).filter { it.id !in purchasedItems }
-
-    val themes = listOf(
-        ShopItem("theme_1", "Ocean", 15, "Themes", Color(0xFF4A90E2)),
-        ShopItem("theme_2", "Flame", 15, "Themes", Color(0xFFE74C3C)),
-        ShopItem("theme_3", "Void", 15, "Themes", Color(0xFF2C3E50))
-    ).filter { it.id !in purchasedItems }
+    // Filter out purchased items
+    val frames = allFrames.filter { it.id !in purchasedItems }
+    val titles = allTitles.filter { it.id !in purchasedItems }
+    val themes = allThemes.filter { it.id !in purchasedItems }
 
     LazyColumn(
         modifier = Modifier
@@ -60,7 +108,8 @@ fun ShopScreen(
         contentPadding = PaddingValues(bottom = 100.dp)
     ) {
         item {
-            Spacer(modifier = Modifier.height(8.dp))
+            // Shop header with reset timer
+            ShopHeader()
         }
 
         // Frames Section - only show if items available
@@ -147,6 +196,51 @@ fun ShopScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+}
+
+@Composable
+fun ShopHeader() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF667EEA))
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Daily Shop",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = getTimeUntilMidnightEST(),
+                fontSize = 14.sp,
+                color = Color.White.copy(alpha = 0.9f)
+            )
+        }
+    }
+}
+
+// Calculate time until midnight EST
+fun getTimeUntilMidnightEST(): String {
+    val now = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"))
+    val midnight = Calendar.getInstance(TimeZone.getTimeZone("America/New_York")).apply {
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+        add(Calendar.DAY_OF_MONTH, 1)
+    }
+
+    val diff = midnight.timeInMillis - now.timeInMillis
+    val hours = (diff / (1000 * 60 * 60)) % 24
+    val minutes = (diff / (1000 * 60)) % 60
+
+    return "Resets in ${hours}h ${minutes}m"
 }
 
 @Composable

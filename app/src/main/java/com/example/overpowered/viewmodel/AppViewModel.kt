@@ -7,6 +7,8 @@ import com.example.overpowered.navigation.Task
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import android.net.Uri
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 
 class AppViewModel : ViewModel() {
     private val repository = FirebaseRepository()
@@ -190,22 +192,26 @@ class AppViewModel : ViewModel() {
 
     fun completeTask(taskId: String, experienceReward: Int = 10, moneyReward: Int = 10) {
         viewModelScope.launch {
-            // Complete the task
-            when (val completeResult = repository.completeTask(taskId)) {
-                is FirebaseResult.Success -> {
-                    // Update player stats
-                    when (val statsResult = repository.updatePlayerStats(experienceReward, moneyReward)) {
-                        is FirebaseResult.Error -> {
-                            _error.value = "Task completed but failed to update stats: ${statsResult.exception.message}"
-                        }
-                        else -> {}
-                    }
-                }
-                is FirebaseResult.Error -> {
-                    _error.value = "Failed to complete task: ${completeResult.exception.message}"
-                }
-                else -> {}
-            }
+            // Optimistically update local state immediately (works offline)
+            val currentProfile = _userProfile.value
+            val newExperience = currentProfile.playerExperience + experienceReward
+            val newMoney = currentProfile.playerMoney + moneyReward
+            val newLevel = (newExperience / 100) + 1
+
+            val updatedProfile = currentProfile.copy(
+                playerExperience = newExperience,
+                playerMoney = newMoney,
+                playerLevel = newLevel
+            )
+
+            // Update local state first (instant feedback, works offline)
+            _userProfile.value = updatedProfile
+
+            // Complete the task in Firebase (queued if offline, synced when online)
+            repository.completeTask(taskId)
+
+            // Update profile in Firebase (queued if offline, synced when online)
+            repository.saveUserProfile(updatedProfile)
         }
     }
 
