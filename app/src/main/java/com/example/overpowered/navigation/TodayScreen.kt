@@ -352,7 +352,7 @@ fun RewardDialog(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            // Experience reward
+                            // Experience rewards
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = "+$experienceReward",
