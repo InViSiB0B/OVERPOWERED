@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "980449425066",
+    "project_id": "overpowered-4815e",
+    "storage_bucket": "overpowered-4815e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:980449425066:android:8c16333fdc5a4511d042d3",
+        "android_client_info": {
+          "package_name": "com.example.overpowered"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfjSNzeAWiphxqrviNegjGUD9T_jfY6Og"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

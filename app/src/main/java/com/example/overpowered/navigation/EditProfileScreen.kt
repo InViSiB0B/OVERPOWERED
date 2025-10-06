@@ -34,7 +34,7 @@ import androidx.compose.foundation.verticalScroll
 @Composable
 fun EditProfileScreen(
     playerName: String,
-    profileImageUri: Uri?,
+    profileImageUrl: String?,
     purchasedItems: Set<String>,
     selectedFrame: String?,
     selectedTitle: String?,
@@ -117,9 +117,9 @@ fun EditProfileScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                if (profileImageUri != null) {
+                if (profileImageUrl != null) {
                     Image(
-                        painter = rememberAsyncImagePainter(model = profileImageUri),
+                        painter = rememberAsyncImagePainter(model = profileImageUrl),
                         contentDescription = "Profile Picture",
                         modifier = Modifier
                             .fillMaxSize()
