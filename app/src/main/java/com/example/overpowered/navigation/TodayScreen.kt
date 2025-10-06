@@ -59,7 +59,7 @@ fun TodayScreen(
         Text(
             text = "Today",
             style = MaterialTheme.typography.headlineMedium,
-            color = Color(0xFF4A5568),
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
@@ -68,6 +68,7 @@ fun TodayScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             shape = RoundedCornerShape(12.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
@@ -83,19 +84,20 @@ fun TodayScreen(
                 ) {
                     Text(
                         text = if (isTaskInputVisible) "Add New Task" else "Create a Task",
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     IconButton(
                         onClick = { isTaskInputVisible = !isTaskInputVisible },
                         modifier = Modifier
                             .size(32.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer)
+                            .background(MaterialTheme.colorScheme.primary)
                     ) {
                         Icon(
                             imageVector = if (isTaskInputVisible) Icons.Filled.Delete else Icons.Filled.Add,
                             contentDescription = if (isTaskInputVisible) "Hide Task Input" else "Show Task Input",
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 }
@@ -114,7 +116,9 @@ fun TodayScreen(
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = Color.Gray
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         )
                         Spacer(modifier = Modifier.height(12.dp))
@@ -126,7 +130,9 @@ fun TodayScreen(
                             minLines = 3,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = Color.Gray
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -159,13 +165,16 @@ fun TodayScreen(
             Text(
                 text = "No tasks yet. Add some!",
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
             Text(
                 text = "Your Tasks",
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 8.dp).align(Alignment.Start)
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier
+                    .padding(bottom = 8.dp)
+                    .align(Alignment.Start)
             )
             LazyColumn(modifier = Modifier.fillMaxWidth()) {
                 items(tasks, key = { task -> task.id }) { task ->
@@ -178,7 +187,6 @@ fun TodayScreen(
                         },
                         onDelete = { onDeleteTask(task) }
                     )
-                    HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
                 }
             }
         }
@@ -200,50 +208,69 @@ fun TaskItem(task: Task, onComplete: () -> Unit, onDelete: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        shape = RoundedCornerShape(8.dp),
+            .padding(vertical = 6.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(horizontal = 16.dp, vertical = 20.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = task.title, style = MaterialTheme.typography.titleSmall)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp) // More space between title and description
+            ) {
+                Text(
+                    text = task.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
                 task.description?.let {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = it, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(start = 16.dp)
             ) {
                 // Complete button
                 IconButton(
                     onClick = onComplete,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.tertiary)
                 ) {
                     Icon(
                         imageVector = Icons.Filled.CheckCircle,
                         contentDescription = "Complete Task",
-                        tint = Color(0xFF48BB78) // Green color for completion
+                        tint = MaterialTheme.colorScheme.onTertiary
                     )
                 }
 
                 // Delete button
                 IconButton(
                     onClick = onDelete,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.errorContainer)
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Delete,
                         contentDescription = "Delete Task",
-                        tint = MaterialTheme.colorScheme.error
+                        tint = MaterialTheme.colorScheme.onErrorContainer
                     )
                 }
             }
@@ -260,7 +287,7 @@ fun RewardDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(20.dp),
         title = {
             Column(
@@ -275,9 +302,9 @@ fun RewardDialog(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Task Completed!",
-                    fontSize = 22.sp,
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4A5568),
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center
                 )
             }
@@ -289,16 +316,16 @@ fun RewardDialog(
             ) {
                 Text(
                     text = "Great job completing:",
-                    fontSize = 16.sp,
-                    color = Color(0xFF718096),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "\"$taskTitle\"",
-                    fontSize = 18.sp,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF4A5568),
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(20.dp))
@@ -307,7 +334,7 @@ fun RewardDialog(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -315,9 +342,9 @@ fun RewardDialog(
                     ) {
                         Text(
                             text = "Rewards Earned:",
-                            fontSize = 16.sp,
+                            style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF4A5568)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(12.dp))
 
@@ -331,12 +358,12 @@ fun RewardDialog(
                                     text = "+$experienceReward",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFED8936)
+                                    color = MaterialTheme.colorScheme.secondary
                                 )
                                 Text(
                                     text = "Experience",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF718096)
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
 
@@ -346,12 +373,12 @@ fun RewardDialog(
                                     text = "+$$moneyReward",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF48BB78)
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
                                     text = "Money",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF718096)
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -360,20 +387,8 @@ fun RewardDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick = onDismiss,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF667EEA)
-                ),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = "Awesome!",
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                )
+            TextButton(onClick = onDismiss) {
+                Text(text = "Awesome!")
             }
         }
     )
