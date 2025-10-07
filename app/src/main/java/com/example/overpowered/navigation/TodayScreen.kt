@@ -192,7 +192,7 @@ fun TodayScreen(
         }
     }
 
-    // Reward Dialog
+    // Reward Dialog // EXP HARD CODED FOR NOW
     if (showRewardDialog) {
         RewardDialog(
             taskTitle = completedTaskTitle,
@@ -355,7 +355,7 @@ fun RewardDialog(
                             // Experience rewards
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    text = "+$experienceReward",
+                                    text = "+$experienceReward", //SETTER FOR TASKS HERE
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.secondary
@@ -370,7 +370,7 @@ fun RewardDialog(
                             // Money reward
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    text = "+$$moneyReward",
+                                    text = "+$$moneyReward", //HERE SETTER FOR TASKS
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
