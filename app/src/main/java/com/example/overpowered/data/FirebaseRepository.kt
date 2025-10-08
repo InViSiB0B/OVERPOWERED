@@ -114,7 +114,7 @@ class FirebaseRepository {
                 isCompleted = false
             )
 
-            // Convert to map to ensure proper serialization/
+            // Convert to map to ensure proper serialization
             val taskMap = mapOf(
                 "title" to taskWithUserId.title,
                 "description" to taskWithUserId.description,
@@ -282,6 +282,130 @@ class FirebaseRepository {
             saveUserProfile(updatedProfile)
         } catch (e: Exception) {
             FirebaseResult.Error(e)
+        }
+    }
+
+    fun observePendingFriendRequests(): Flow<FirebaseResult<List<FriendRequest>>> {
+        val userId = getCurrentUserId()
+        if (userId == null) {
+            return flowOf(FirebaseResult.Error(Exception("User not authenticated")))
+        }
+
+        return callbackFlow {
+            val listener = firestore.collection("friendRequests")
+                .whereEqualTo("toUserId", userId)
+                .whereEqualTo("status", "pending")
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        trySend(FirebaseResult.Error(error))
+                        return@addSnapshotListener
+                    }
+
+                    if (snapshot != null) {
+                        try {
+                            val requests = snapshot.documents.mapNotNull { doc ->
+                                doc.toObject(FriendRequest::class.java)?.copy(id = doc.id)
+                            }
+                            trySend(FirebaseResult.Success(requests))
+                        } catch (e: Exception) {
+                            trySend(FirebaseResult.Error(e))
+                        }
+                    }
+                }
+
+            awaitClose { listener.remove() }
+        }
+    }
+
+    suspend fun acceptFriendRequest(requestId: String, request: FriendRequest): FirebaseResult<Unit> {
+        val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
+
+        return try {
+            // Get both user profiles
+            val toUserDoc = firestore.collection("users").document(request.toUserId).get().await()
+            val fromUserDoc = firestore.collection("users").document(request.fromUserId).get().await()
+
+            val toUser = toUserDoc.toObject(UserProfile::class.java)
+            val fromUser = fromUserDoc.toObject(UserProfile::class.java)
+
+            if (toUser == null || fromUser == null) {
+                return FirebaseResult.Error(Exception("Failed to get user profiles"))
+            }
+
+            // Create friendships in both directions
+            val friendship1 = Friendship(
+                userId = request.toUserId,
+                friendId = request.fromUserId,
+                friendName = request.fromUserName,
+                friendProfileImageUrl = fromUser.profileImageUrl,
+                createdAt = Date()
+            )
+
+            val friendship2 = Friendship(
+                userId = request.fromUserId,
+                friendId = request.toUserId,
+                friendName = request.toUserName,
+                friendProfileImageUrl = toUser.profileImageUrl,
+                createdAt = Date()
+            )
+
+            // Add friendships
+            firestore.collection("friendships").add(friendship1).await()
+            firestore.collection("friendships").add(friendship2).await()
+
+            // Update request status
+            firestore.collection("friendRequests")
+                .document(requestId)
+                .update("status", "accepted")
+                .await()
+
+            FirebaseResult.Success(Unit)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
+    suspend fun ignoreFriendRequest(requestId: String): FirebaseResult<Unit> {
+        return try {
+            firestore.collection("friendRequests")
+                .document(requestId)
+                .update("status", "ignored")
+                .await()
+
+            FirebaseResult.Success(Unit)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
+    fun observeFriends(): Flow<FirebaseResult<List<Friendship>>> {
+        val userId = getCurrentUserId()
+        if (userId == null) {
+            return flowOf(FirebaseResult.Error(Exception("User not authenticated")))
+        }
+
+        return callbackFlow {
+            val listener = firestore.collection("friendships")
+                .whereEqualTo("userId", userId)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        trySend(FirebaseResult.Error(error))
+                        return@addSnapshotListener
+                    }
+
+                    if (snapshot != null) {
+                        try {
+                            val friends = snapshot.documents.mapNotNull { doc ->
+                                doc.toObject(Friendship::class.java)?.copy(id = doc.id)
+                            }
+                            trySend(FirebaseResult.Success(friends))
+                        } catch (e: Exception) {
+                            trySend(FirebaseResult.Error(e))
+                        }
+                    }
+                }
+
+            awaitClose { listener.remove() }
         }
     }
 }

@@ -5,8 +5,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,10 +27,15 @@ fun ProfileScreen(
     profileImageUrl: String?,
     playerMoney: Int,
     playerExperience: Int,
-    onEditClick: () -> Unit
+    onEditClick: () -> Unit,
+    onSendFriendRequest: (String) -> Unit = {}
 ) {
     // Calculate player level based on experience (super placeholder right now: level = experience / 100 + 1)
     val playerLevel = (playerExperience / 100) + 1
+
+    // Add friend dialog state
+    val showAddFriendDialog = remember { mutableStateOf(false) }
+    val friendNameInput = remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -38,11 +46,33 @@ fun ProfileScreen(
     ) {
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Edit button
+        // Edit button and Add Friend button
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            Button(
+                onClick = { showAddFriendDialog.value = true },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF48BB78)
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(
+                    Icons.Filled.AddCircle,
+                    contentDescription = "Add Friend",
+                    modifier = Modifier.size(18.dp),
+                    tint = Color.White
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Add Friend",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
             Button(
                 onClick = onEditClick,
                 colors = ButtonDefaults.buttonColors(
@@ -176,5 +206,64 @@ fun ProfileScreen(
                 }
             }
         }
+    }
+
+    // Add Friend Dialog
+    if (showAddFriendDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showAddFriendDialog.value = false },
+            title = {
+                Text(
+                    text = "Add Friend",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Enter your friend's player name:",
+                        fontSize = 14.sp,
+                        color = Color(0xFF4A5568)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = friendNameInput.value,
+                        onValueChange = { friendNameInput.value = it },
+                        label = { Text("Player Name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (friendNameInput.value.isNotBlank()) {
+                            onSendFriendRequest(friendNameInput.value)
+                            friendNameInput.value = ""
+                            showAddFriendDialog.value = false
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF48BB78)
+                    ),
+                    enabled = friendNameInput.value.isNotBlank()
+                ) {
+                    Text("Send Request")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        friendNameInput.value = ""
+                        showAddFriendDialog.value = false
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
+        )
     }
 }

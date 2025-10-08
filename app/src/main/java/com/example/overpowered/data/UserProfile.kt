@@ -27,9 +27,32 @@ data class FirebaseTask(
     val title: String = "",
     val description: String? = null,
     val isCompleted: Boolean = false,
-    val createdAt: Date? = null, //
+    val createdAt: Date? = null,
     val completedAt: Date? = null,
     val userId: String = ""
+)
+
+// Friend request data model
+data class FriendRequest(
+    val id: String = "",
+    val fromUserId: String = "",
+    val fromUserName: String = "",
+    val toUserId: String = "",
+    val toUserName: String = "",
+    val status: String = "pending", // "pending, "accepted", "ignored"
+    @ServerTimestamp
+    val createdAt: Date? = null
+)
+
+// Friendship data model
+data class Friendship(
+    val id: String = "",
+    val userId: String = "",
+    val friendId: String = "",
+    val friendName: String = "",
+    val friendProfileImageUrl: String? = null,
+    @ServerTimestamp
+    val createdAt: Date? = null
 )
 
 // App state wrapper for easy syncing
