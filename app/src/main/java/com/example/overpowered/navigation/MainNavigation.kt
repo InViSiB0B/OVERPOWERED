@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.rememberAsyncImagePainter
@@ -36,12 +37,14 @@ fun MainNavigation(
     var tab by remember { mutableStateOf(Tab.Today) }
     var showProfile by remember { mutableStateOf(false) }
     var showEditProfile by remember { mutableStateOf(false) }
+    var showNotifications by remember { mutableStateOf(false) }
 
     // Observe ViewModel state
     val userProfile by viewModel.userProfile.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val tasks by viewModel.localTasks.collectAsState()
+    val pendingFriendRequests by viewModel.pendingFriendRequests.collectAsState()
 
     // Show error messages
     error?.let { errorMessage ->
@@ -59,7 +62,9 @@ fun MainNavigation(
                 profileImageUrl = userProfile.profileImageUrl,
                 playerMoney = userProfile.playerMoney ?: 100,
                 playerExperience = userProfile.playerExperience ?: 0,
-                onProfileClick = { showProfile = !showProfile }
+                notificationCount = pendingFriendRequests.size,
+                onProfileClick = { showProfile = !showProfile },
+                onNotificationClick = { showNotifications = true }
             )
         },
         bottomBar = {
@@ -220,6 +225,18 @@ fun MainNavigation(
             }
         }
     }
+    if (showNotifications) {
+        FriendRequestsDialog(
+            friendRequests = pendingFriendRequests,
+            onAccept = { request ->
+                viewModel.acceptFriendRequest(request)
+            },
+            onIgnore = { requestId ->
+                viewModel.ignoreFriendRequest(requestId)
+            },
+            onDismiss = { showNotifications = false }
+        )
+    }
 }
 
 @Composable
@@ -230,7 +247,9 @@ fun TopStatusBar(
     profileImageUrl: String?,
     playerMoney: Int,
     playerExperience: Int,
-    onProfileClick: () -> Unit
+    notificationCount: Int,
+    onProfileClick: () -> Unit,
+    onNotificationClick: () -> Unit
 ) {
     // Calculate player level based on experience
     val playerLevel = (playerExperience / 100) + 1
@@ -283,43 +302,45 @@ fun TopStatusBar(
                 // Top level
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     // Left side - Profile picture
-                    Box(
-                        modifier = Modifier.weight(1f),
-                        contentAlignment = Alignment.CenterStart
+                    Card(
+                        modifier = Modifier.size(32.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.2f)),
+                        onClick = onProfileClick
                     ) {
-                        Card(
-                            modifier = Modifier.size(32.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.2f)),
-                            onClick = onProfileClick
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (profileImageUrl != null) {
-                                    Image(
-                                        painter = rememberAsyncImagePainter(profileImageUrl),
-                                        contentDescription = "Profile",
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .clip(RoundedCornerShape(16.dp)),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                } else {
-                                    Icon(
-                                        Icons.Filled.Person,
-                                        contentDescription = "Profile",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
+                            if (profileImageUrl != null) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(profileImageUrl),
+                                    contentDescription = "Profile",
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(16.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Filled.Person,
+                                    contentDescription = "Profile",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
                             }
                         }
                     }
+
+                    // Right side - Notification bell
+                    NotificationButton(
+                        notificationCount = notificationCount,
+                        onClick = onNotificationClick
+                    )
                 }
 
                 // Bottom level - LVL and Money
@@ -366,6 +387,52 @@ fun TopStatusBar(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun NotificationButton(
+    notificationCount: Int,
+    onClick: () -> Unit
+) {
+    Box {
+        Card(
+            modifier = Modifier.size(32.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White.copy(alpha = 0.2f)
+            ),
+            onClick = onClick
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Filled.Notifications,
+                    contentDescription = "Notifications",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
+        // Badge for notification count
+        if (notificationCount > 0) {
+            Badge(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 4.dp, y = (-4).dp),
+                containerColor = Color(0xFFE74C3C)
+            ) {
+                Text(
+                    text = if (notificationCount > 9) "9+" else notificationCount.toString(),
+                    color = Color.White,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }

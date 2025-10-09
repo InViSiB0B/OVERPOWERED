@@ -317,6 +317,77 @@ class FirebaseRepository {
         }
     }
 
+    suspend fun sendFriendRequest(playerName: String): FirebaseResult<Unit> {
+        val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
+
+        return try {
+            // Get current user's profile
+            val currentUserProfile = when (val result = getUserProfile()) {
+                is FirebaseResult.Success -> result.data
+                is FirebaseResult.Error -> throw result.exception
+                else -> throw Exception("Failed to get current user profile")
+            }
+
+            // Search for user by player name
+            val querySnapshot = firestore.collection("users")
+                .whereEqualTo("playerName", playerName)
+                .get()
+                .await()
+
+            if (querySnapshot.isEmpty) {
+                return FirebaseResult.Error(Exception("Player not found"))
+            }
+
+            val targetUser = querySnapshot.documents.first().toObject(UserProfile::class.java)
+                ?: return FirebaseResult.Error(Exception("Failed to parse user profile"))
+
+            if (targetUser.userId == userId) {
+                return FirebaseResult.Error(Exception("You cannot send a friend request to yourself"))
+            }
+
+            // Check if friend request already exists
+            val existingRequest = firestore.collection("friendRequests")
+                .whereEqualTo("fromUserId", userId)
+                .whereEqualTo("toUserId", targetUser.userId)
+                .whereEqualTo("status", "pending")
+                .get()
+                .await()
+
+            if (!existingRequest.isEmpty) {
+                return FirebaseResult.Error(Exception("Friend request already sent"))
+            }
+
+            // Check if already friends
+            val existingFriendship = firestore.collection("friendships")
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("friendId", targetUser.userId)
+                .get()
+                .await()
+
+            if (!existingFriendship.isEmpty) {
+                return FirebaseResult.Error(Exception("Already friends with this player"))
+            }
+
+            // Create friend request
+            val friendRequest = FriendRequest(
+                fromUserId = userId,
+                fromUserName = currentUserProfile.playerName,
+                toUserId = targetUser.userId,
+                toUserName = targetUser.playerName,
+                status = "pending",
+                createdAt = Date()
+            )
+
+            firestore.collection("friendRequests")
+                .add(friendRequest)
+                .await()
+
+            FirebaseResult.Success(Unit)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
     suspend fun acceptFriendRequest(requestId: String, request: FriendRequest): FirebaseResult<Unit> {
         val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
 

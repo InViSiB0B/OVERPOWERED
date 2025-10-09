@@ -28,6 +28,14 @@ class AppViewModel : ViewModel() {
     private val _tasks = MutableStateFlow<List<FirebaseTask>>(emptyList())
     val tasks: StateFlow<List<FirebaseTask>> = _tasks.asStateFlow()
 
+    // Friend requests state
+    private val _pendingFriendRequests = MutableStateFlow<List<FriendRequest>>(emptyList())
+    val pendingFriendRequests: StateFlow<List<FriendRequest>> = _pendingFriendRequests.asStateFlow()
+
+    // Friends state
+    private val _friends = MutableStateFlow<List<Friendship>>(emptyList())
+    val friends: StateFlow<List<Friendship>> = _friends.asStateFlow()
+
     // Exposed StateFlow for UI to observe
     val localTasks: StateFlow<List<Task>> = _tasks.map { firebaseTasks ->
         firebaseTasks.map { it.toLocalTask() }
@@ -99,6 +107,36 @@ class AppViewModel : ViewModel() {
                     }
                     is FirebaseResult.Error -> {
                         _error.value = "Failed to load tasks: ${result.exception.message}"
+                    }
+                    else -> {}
+                }
+            }
+        }
+
+        // Observe friend requests
+        viewModelScope.launch {
+            repository.observePendingFriendRequests().collect { result ->
+                when (result) {
+                    is FirebaseResult.Success -> {
+                        _pendingFriendRequests.value = result.data
+                    }
+                    is FirebaseResult.Error -> {
+                        // Silently fail for friend requests
+                    }
+                    else -> {}
+                }
+            }
+        }
+
+        // Observe friends list
+        viewModelScope.launch {
+            repository.observeFriends().collect { result ->
+                when (result) {
+                    is FirebaseResult.Success -> {
+                        _friends.value = result.data
+                    }
+                    is FirebaseResult.Error -> {
+                        // Silently fail for friends list
                     }
                     else -> {}
                 }
@@ -235,6 +273,38 @@ class AppViewModel : ViewModel() {
         return _tasks.value.find { it.id.hashCode().toLong() == localTaskId }
     }
 
+    // Friend operations
+    fun sendFriendRequest(playerName: String) {
+        viewModelScope.launch {
+            when (val result = repository.sendFriendRequest(playerName)) {
+                is FirebaseResult.Success -> {
+                    _error.value = "Friend request sent!"
+                }
+                is FirebaseResult.Error -> {
+                    _error.value = result.exception.message
+                }
+                else -> {}
+            }
+        }
+    }
+
+    fun acceptFriendRequest(request: FriendRequest) {
+        viewModelScope.launch {
+            when (val result = repository.acceptFriendRequest(request.id, request)) {
+                is FirebaseResult.Error -> {
+                    _error.value = "Failed to accept friend request: ${result.exception.message}"
+                }
+                else -> {}
+            }
+        }
+    }
+
+    fun ignoreFriendRequest(requestId: String) {
+        viewModelScope.launch {
+            repository.ignoreFriendRequest(requestId)
+        }
+    }
+
     // Computed properties for UI
     val playerName: String get() = _userProfile.value.playerName
     val playerMoney: Int get() = _userProfile.value.playerMoney
@@ -245,4 +315,5 @@ class AppViewModel : ViewModel() {
     val selectedTitle: String? get() = _userProfile.value.selectedTitle
     val selectedTheme: String? get() = _userProfile.value.selectedTheme
     val profileImageUrl: String? get() = _userProfile.value.profileImageUrl
+    val friendRequestCount: Int get() = _pendingFriendRequests.value.size
 }
