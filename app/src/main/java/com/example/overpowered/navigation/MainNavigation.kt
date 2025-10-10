@@ -190,7 +190,11 @@ fun MainNavigation(
                     profileImageUrl = userProfile.profileImageUrl,
                     playerMoney = userProfile.playerMoney ?: 100,
                     playerExperience = userProfile.playerExperience ?: 0,
-                    onEditClick = { showEditProfile = true }
+                    friends = viewModel.friends.collectAsState().value,
+                    onEditClick = { showEditProfile = true },
+                    onSendFriendRequest = { playerName ->
+                        viewModel.sendFriendRequest(playerName)
+                    }
                 )
             } else {
                 when (tab) {
