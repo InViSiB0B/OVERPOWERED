@@ -278,7 +278,7 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height(24.dp))
     }
 
-    // Add Friend Dialog
+    // Add Friends Dialog
     if (showAddFriendDialog.value) {
         AlertDialog(
             onDismissRequest = { showAddFriendDialog.value = false },
