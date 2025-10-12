@@ -6,6 +6,7 @@ import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
 import android.net.Uri
+import com.google.firebase.firestore.FieldValue
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.channels.awaitClose
@@ -171,6 +172,50 @@ class FirebaseRepository {
         }
     }
 
+    suspend fun addTag(taskId: String, vararg tags: String): FirebaseResult<Unit> {
+        // TODO: call getCurrentUserId()?
+
+        if (tags.isEmpty()) {
+            return FirebaseResult.Error(IllegalArgumentException("No tags supplied"))
+        }
+
+        return try {
+            val updates = mapOf(
+                "tags" to FieldValue.arrayUnion(*tags)
+            )
+            firestore.collection("tasks")
+                .document(taskId)
+                .update(updates)
+                .await()
+
+            FirebaseResult.Success(Unit)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
+    suspend fun removeTag(taskId: String, vararg tags: String): FirebaseResult<Unit> {
+        // TODO: call getCurrentUserId()?
+
+        if (tags.isEmpty()) {
+            return FirebaseResult.Error(IllegalArgumentException("No tags supplied"))
+        }
+
+        return try {
+            val updates = mapOf(
+                "tags" to FieldValue.arrayRemove(*tags)
+            )
+            firestore.collection("tasks")
+                .document(taskId)
+                .update(updates)
+                .await()
+
+            FirebaseResult.Success(Unit)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
     // Real-time task updates
     fun observeUserTasks(): Flow<FirebaseResult<List<FirebaseTask>>> {
         val userId = getCurrentUserId()
@@ -204,11 +249,13 @@ class FirebaseRepository {
         }
     }
 
-    fun observeCompletedTasks(): kotlinx.coroutines.flow.Flow<FirebaseResult<List<FirebaseTask>>> {
+    fun observeCompletedTasks(): Flow<FirebaseResult<List<FirebaseTask>>> {
         val userId = getCurrentUserId()
-        if (userId == null) return kotlinx.coroutines.flow.flowOf(FirebaseResult.Error(Exception("User not authenticated")))
+        if (userId == null) {
+            return flowOf(FirebaseResult.Error(Exception("User not authenticated")))
+        }
 
-        return kotlinx.coroutines.flow.callbackFlow {
+        return callbackFlow {
             val listener = FirebaseFirestore.getInstance()
                 .collection("tasks")
                 .whereEqualTo("userId", userId)
@@ -229,6 +276,39 @@ class FirebaseRepository {
                         }
                     }
                 }
+            awaitClose { listener.remove() }
+        }
+    }
+
+    fun observeTasksWithTag(tag: String): Flow<FirebaseResult<List<FirebaseTask>>> {
+        val userId = getCurrentUserId()
+        if (userId == null) {
+            return flowOf(FirebaseResult.Error(Exception("User not authenticated")))
+        }
+
+        return callbackFlow {
+            val listener = firestore.collection("tasks")
+                .whereEqualTo("userId", userId)
+                .whereArrayContains("tags", tag)
+                .whereEqualTo("isCompleted", false)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        trySend(FirebaseResult.Error(error))
+                        return@addSnapshotListener
+                    }
+
+                    if (snapshot != null) {
+                        try {
+                            val tasks = snapshot.documents.mapNotNull { doc ->
+                                doc.toObject(FirebaseTask::class.java)?.copy(id = doc.id)
+                            }
+                            trySend(FirebaseResult.Success(tasks))
+                        } catch (e: Exception) {
+                            trySend(FirebaseResult.Error(e))
+                        }
+                    }
+                }
+
             awaitClose { listener.remove() }
         }
     }

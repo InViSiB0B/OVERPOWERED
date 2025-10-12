@@ -29,7 +29,8 @@ data class FirebaseTask(
     val isCompleted: Boolean = false,
     val createdAt: Date? = null,
     val completedAt: Date? = null,
-    val userId: String = ""
+    val userId: String = "",
+    val tags: List<String> = emptyList()
 )
 
 // Friend request data model
