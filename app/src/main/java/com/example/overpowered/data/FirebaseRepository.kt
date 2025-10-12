@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
 import android.net.Uri
 import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.Query
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.channels.awaitClose
@@ -216,6 +217,34 @@ class FirebaseRepository {
         }
     }
 
+    suspend fun setDeadline(taskId: String, deadline: Date?): FirebaseResult<Unit> {
+        // TODO: call getCurrentUserId()?
+
+        val updates = if (deadline != null) {
+            mapOf(
+                "deadline" to deadline,
+                "lastUpdated" to Date()
+            )
+        } else {
+            // Delete the "deadline" field using FieldValue.delete() instead of setting "deadline" to null
+            mapOf(
+                "deadline" to FieldValue.delete(),
+                "lastUpdated" to Date()
+            )
+        }
+
+        return try {
+            firestore.collection("tasks")
+                .document(taskId)
+                .update(updates)
+                .await()
+
+            FirebaseResult.Success(Unit)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
     // Real-time task updates
     fun observeUserTasks(): Flow<FirebaseResult<List<FirebaseTask>>> {
         val userId = getCurrentUserId()
@@ -291,6 +320,42 @@ class FirebaseRepository {
                 .whereEqualTo("userId", userId)
                 .whereArrayContains("tags", tag)
                 .whereEqualTo("isCompleted", false)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        trySend(FirebaseResult.Error(error))
+                        return@addSnapshotListener
+                    }
+
+                    if (snapshot != null) {
+                        try {
+                            val tasks = snapshot.documents.mapNotNull { doc ->
+                                doc.toObject(FirebaseTask::class.java)?.copy(id = doc.id)
+                            }
+                            trySend(FirebaseResult.Success(tasks))
+                        } catch (e: Exception) {
+                            trySend(FirebaseResult.Error(e))
+                        }
+                    }
+                }
+
+            awaitClose { listener.remove() }
+        }
+    }
+
+    fun observeUpcomingTasks(limit: Long = 20): Flow<FirebaseResult<List<FirebaseTask>>> {
+        val userId = getCurrentUserId()
+        if (userId == null) {
+            return flowOf(FirebaseResult.Error(Exception("User not authenticated")))
+        }
+
+        return callbackFlow {
+            val now = Date()
+            val listener = firestore.collection("tasks")
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("isCompleted", false)
+                .whereGreaterThanOrEqualTo("deadline", now)
+                .orderBy("deadline", Query.Direction.ASCENDING)
+                .limit(limit)
                 .addSnapshotListener { snapshot, error ->
                     if (error != null) {
                         trySend(FirebaseResult.Error(error))
