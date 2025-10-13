@@ -27,14 +27,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.overpowered.navigation.utils.formatDate
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
 
 // Data class to represent a task (local UI model).
 data class Task(
     val id: Long = System.currentTimeMillis(),
     val title: String,
-    val description: String? = null
+    val description: String? = null,
+    val dueDate: Long? = null
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodayScreen(
     tasks: List<Task> = emptyList(),
@@ -45,6 +51,9 @@ fun TodayScreen(
     var isTaskInputVisible by remember { mutableStateOf(false) }
     var taskTitle by remember { mutableStateOf("") }
     var taskDescription by remember { mutableStateOf("") }
+
+    var showDatePicker by remember { mutableStateOf(false) }
+    var dueDate by remember { mutableStateOf<Long?>(null) }
 
     // Reward dialog state
     var showRewardDialog by remember { mutableStateOf(false) }
@@ -82,6 +91,18 @@ fun TodayScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    if (dueDate != null) {
+                        AssistChip(
+                            onClick = { showDatePicker = true },
+                            label = { Text(formatDate(dueDate!!)) }
+                        )
+                    } else {
+                        AssistChip(
+                            onClick = { showDatePicker = true },
+                            label = { Text("Set due date") }
+                        )
+                    }
+
                     Text(
                         text = if (isTaskInputVisible) "Add New Task" else "Create a Task",
                         style = MaterialTheme.typography.titleMedium,
@@ -145,6 +166,7 @@ fun TodayScreen(
                                     )
                                     taskTitle = "" // Clear input
                                     taskDescription = "" // Clear input
+                                    dueDate = null // Clear date
                                     isTaskInputVisible = false // Collapse the input section
                                 }
                             },
@@ -191,6 +213,53 @@ fun TodayScreen(
             }
         }
     }
+
+    if (showDatePicker) {
+        // Use Calendar to reliably get the start of today in the local timezone
+        val todayMillis = remember {
+            val calendar = java.util.Calendar.getInstance()
+            // Set calendar to the beginning of the day (midnight)
+            calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+            calendar.set(java.util.Calendar.MINUTE, 0)
+            calendar.set(java.util.Calendar.SECOND, 0)
+            calendar.set(java.util.Calendar.MILLISECOND, 0)
+            calendar.timeInMillis
+        }
+
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = dueDate ?: todayMillis,
+            // Pass the validator directly into the state
+            yearRange = (2023..2030),
+            selectableDates = object : SelectableDates {
+                // Disable all dates before the start of today
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    return utcTimeMillis >= todayMillis
+                }
+            }
+        )
+
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        // The selected date is guaranteed to be valid because of the validator
+                        dueDate = datePickerState.selectedDateMillis
+                        showDatePicker = false
+                    },
+                    enabled = datePickerState.selectedDateMillis != null
+                ) { Text("Set") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(
+                state = datePickerState
+            )
+        }
+    }
+
 
     // Reward Dialog // EXP HARD CODED FOR NOW
     if (showRewardDialog) {
