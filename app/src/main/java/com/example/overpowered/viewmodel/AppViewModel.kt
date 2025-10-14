@@ -242,7 +242,7 @@ class AppViewModel : ViewModel() {
                 playerLevel = newLevel
             )
 
-            // Update local state first (instant feedback, works offline)
+            // Update local state first (instant feedback, works offline).
             _userProfile.value = updatedProfile
 
             // Complete the task in Firebase (queued if offline, synced when online)
