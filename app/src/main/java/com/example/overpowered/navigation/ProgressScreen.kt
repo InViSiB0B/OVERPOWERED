@@ -1,7 +1,6 @@
 package com.example.overpowered.navigation
 
-import com.example.overpowered.data.FirebaseRepository
-import com.example.overpowered.data.FirebaseResult
+
 import com.example.overpowered.data.UserProfile
 import com.example.overpowered.data.FirebaseTask
 
@@ -21,7 +20,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.overpowered.viewmodel.AppViewModel
-import kotlinx.coroutines.flow.collectLatest
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -55,7 +53,7 @@ data class TaskHistoryItem(
 fun RewardsScreen(
     viewModel: AppViewModel
 ) {
-    // Get data from ViewModel instead of creating own repository
+    // Get data from ViewModel
     val userProfile by viewModel.userProfile.collectAsState()
     val completedTasks by viewModel.completedTasks.collectAsState()
 
@@ -86,7 +84,7 @@ fun RewardsScreen(
 
 // ---------- Mapping helpers ----------
 private fun UserProfile.toPlayerStatsForProgress(): PlayerStats {
-    // Basic: linear leveling — each level requires 100 XP (upgrade later if you want a curve)
+    // Basic: linear leveling — each level requires 100 XP (upgrade later for curve)
     val expCap = 100
     val expWithinLevel = playerExperience % expCap
     return PlayerStats(
@@ -111,7 +109,7 @@ private fun FirebaseTask.toHistoryItem(): TaskHistoryItem {
     )
 }
 
-// ---------- Cards (same look as before) ----------
+// ---------- Cards ----------
 @Composable
 fun StatsSummaryCard(stats: PlayerStats) {
     Card(

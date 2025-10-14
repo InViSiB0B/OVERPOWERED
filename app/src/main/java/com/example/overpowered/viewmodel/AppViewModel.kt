@@ -7,8 +7,7 @@ import com.example.overpowered.navigation.Task
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import android.net.Uri
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
+import kotlinx.coroutines.tasks.await
 
 class AppViewModel : ViewModel() {
     private val repository = FirebaseRepository()
@@ -268,6 +267,10 @@ class AppViewModel : ViewModel() {
 
             // Update profile in Firebase (queued if offline, synced when online)
             repository.saveUserProfile(updatedProfile)
+
+            // Manually refresh completed tasks after a short delay
+            kotlinx.coroutines.delay(500) // Wait for Firebase to process
+            refreshCompletedTasks()
         }
     }
 
@@ -289,6 +292,33 @@ class AppViewModel : ViewModel() {
 
     fun findFirebaseTaskById(localTaskId: Long): FirebaseTask? {
         return _tasks.value.find { it.id.hashCode().toLong() == localTaskId }
+    }
+
+    private fun refreshCompletedTasks() {
+        viewModelScope.launch {
+            try {
+                val userId = repository.getCurrentUserId()
+                if (userId != null) {
+                    // Manually fetch completed tasks
+                    val tasksSnapshot = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                        .collection("users")
+                        .document(userId)
+                        .collection("tasks")
+                        .whereEqualTo("isCompleted", true)
+                        .get()
+                        .await()
+
+                    val tasks = tasksSnapshot.documents.mapNotNull { doc ->
+                        doc.toObject(com.example.overpowered.data.FirebaseTask::class.java)?.copy(id = doc.id)
+                    }.sortedByDescending { it.completedAt?.time ?: 0 }
+
+                    _completedTasks.value = tasks
+                    android.util.Log.d("AppViewModel", "Manually refreshed completed tasks: ${tasks.size}")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("AppViewModel", "Error refreshing completed tasks: ${e.message}")
+            }
+        }
     }
 
     // Friend operations
