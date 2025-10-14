@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.overpowered.viewmodel.AppViewModel
 import kotlinx.coroutines.flow.collectLatest
 import java.time.Instant
 import java.time.LocalDate
@@ -52,47 +53,15 @@ data class TaskHistoryItem(
 // ---------- Screen ----------
 @Composable
 fun RewardsScreen(
-    repo: FirebaseRepository = remember { FirebaseRepository() }
+    viewModel: AppViewModel
 ) {
-    LaunchedEffect(Unit) {
-        repo.observeUserProfile().collect { /* update state */ }
-    }
-    LaunchedEffect(Unit) {
-        repo.observeCompletedTasks().collect { /* update state */ }
-    }
+    // Get data from ViewModel instead of creating own repository
+    val userProfile by viewModel.userProfile.collectAsState()
+    val completedTasks by viewModel.completedTasks.collectAsState()
 
-    // Observe profile - stats
-    val profileFlowState = remember { mutableStateOf<FirebaseResult<UserProfile>>(FirebaseResult.Loading) }
-    LaunchedEffect(repo.getCurrentUserId()) {
-        // Only attach listener when we have a user
-            repo.observeUserProfile().collectLatest { profileFlowState.value = it }
-    }
-
-    val playerStats: PlayerStats? = (profileFlowState.value as? FirebaseResult.Success)
-        ?.data
-        ?.toPlayerStatsForProgress()
-
-    // Observe completed tasks - history list
-    val historyState = remember { mutableStateOf<FirebaseResult<List<FirebaseTask>>>(FirebaseResult.Loading) }
-    LaunchedEffect(repo.getCurrentUserId()) {
-        if (repo.getCurrentUserId() != null) {
-            repo.observeCompletedTasks().collectLatest { historyState.value = it }
-        }
-    }
-
-    val taskHistoryItems: List<TaskHistoryItem> = (historyState.value as? FirebaseResult.Success)
-        ?.data
-        ?.map { it.toHistoryItem() }
-        ?: emptyList()
-
-    // Goals mocked
-    val goals = remember {
-        listOf(
-            Goal("g1", "Complete 100 tasks", current = taskHistoryItems.size, target = 100, unit = "tasks"),
-            Goal("g2", "Earn 5000 XP", current = playerStats?.level?.times(100)?.plus(playerStats.exp) ?: 0, target = 5000, unit = "XP"),
-            Goal("g3", "Save 1000 gold", current = playerStats?.gold ?: 0, target = 1000, unit = "gold")
-        )
-    }
+    // Convert to UI models
+    val playerStats: PlayerStats = userProfile.toPlayerStatsForProgress()
+    val taskHistoryItems: List<TaskHistoryItem> = completedTasks.map { it.toHistoryItem() }
 
     // ---------- UI ----------
     LazyColumn(
@@ -101,25 +70,14 @@ fun RewardsScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Stats card (profile-backed)
+        // Stats card
         item {
-            when (val pr = profileFlowState.value) {
-                is FirebaseResult.Loading -> LoadingStatsCard()
-                is FirebaseResult.Error   -> ErrorStatsCard()
-                is FirebaseResult.Success -> StatsSummaryCard(playerStats!!) // success implies non-null
-            }
+            StatsSummaryCard(playerStats)
         }
 
-//        // Goals (mock for now)
-//        item { GoalsCard(goals) }
-//
-        // History card (completed tasks)
+        // History card
         item {
-            when (val hs = historyState.value) {
-                is FirebaseResult.Loading -> LoadingHistoryCard()
-                is FirebaseResult.Error   -> ErrorHistoryCard()
-                is FirebaseResult.Success -> TaskHistoryCard(taskHistoryItems)
-            }
+            TaskHistoryCard(taskHistoryItems)
         }
 
         item { Spacer(Modifier.height(16.dp)) }
@@ -144,13 +102,12 @@ private fun FirebaseTask.toHistoryItem(): TaskHistoryItem {
         // Non-basic: use java.time formatting i18n; for now just LocalDate
         Instant.ofEpochMilli(date.time).atZone(ZoneId.systemDefault()).toLocalDate()
     } ?: LocalDate.now()
-    // Non-basic: reward values are placeholders until your task model stores rewards
     return TaskHistoryItem(
         id = id,
         title = title.ifBlank { "Completed task" },
         date = localDate,
-        rewardExp = 0,   // <-- comment: replace when you add rewards to FirebaseTask
-        rewardGold = 0   // <-- comment: replace when you add rewards to FirebaseTask
+        rewardExp = experienceReward,
+        rewardGold = moneyReward
     )
 }
 

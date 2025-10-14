@@ -28,6 +28,9 @@ class AppViewModel : ViewModel() {
     private val _tasks = MutableStateFlow<List<FirebaseTask>>(emptyList())
     val tasks: StateFlow<List<FirebaseTask>> = _tasks.asStateFlow()
 
+    private val _completedTasks = MutableStateFlow<List<FirebaseTask>>(emptyList())
+    val completedTasks: StateFlow<List<FirebaseTask>> = _completedTasks.asStateFlow()
+
     // Friend requests state
     private val _pendingFriendRequests = MutableStateFlow<List<FriendRequest>>(emptyList())
     val pendingFriendRequests: StateFlow<List<FriendRequest>> = _pendingFriendRequests.asStateFlow()
@@ -107,6 +110,21 @@ class AppViewModel : ViewModel() {
                     }
                     is FirebaseResult.Error -> {
                         _error.value = "Failed to load tasks: ${result.exception.message}"
+                    }
+                    else -> {}
+                }
+            }
+        }
+
+        // Observe completed tasks
+        viewModelScope.launch {
+            repository.observeCompletedTasks().collect { result ->
+                when (result) {
+                    is FirebaseResult.Success -> {
+                        _completedTasks.value = result.data
+                    }
+                    is FirebaseResult.Error -> {
+                        // Silently fail for completed tasks
                     }
                     else -> {}
                 }
@@ -246,7 +264,7 @@ class AppViewModel : ViewModel() {
             _userProfile.value = updatedProfile
 
             // Complete the task in Firebase (queued if offline, synced when online)
-            repository.completeTask(taskId)
+            repository.completeTask(taskId, experienceReward, moneyReward)
 
             // Update profile in Firebase (queued if offline, synced when online)
             repository.saveUserProfile(updatedProfile)

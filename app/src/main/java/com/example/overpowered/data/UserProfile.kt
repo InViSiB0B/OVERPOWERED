@@ -31,6 +31,8 @@ data class FirebaseTask(
     val createdAt: Date? = null,
     val completedAt: Date? = null,
     val userId: String = "",
+    val experienceReward: Int = 10,
+    val moneyReward: Int = 10,
     val tags: List<String> = emptyList(),
     val deadline: Date? = null
 )

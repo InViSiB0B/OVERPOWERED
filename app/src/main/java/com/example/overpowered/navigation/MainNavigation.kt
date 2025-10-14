@@ -217,7 +217,7 @@ fun MainNavigation(
                             }
                         }
                     )
-                    Tab.Rewards -> RewardsScreen()
+                    Tab.Rewards -> RewardsScreen(viewModel = viewModel)
                     Tab.Shop -> ShopScreen(
                         playerMoney = userProfile.playerMoney ?: 100,
                         purchasedItems = userProfile.purchasedItems?.toSet() ?: emptySet(),

@@ -172,11 +172,13 @@ class FirebaseRepository {
         }
     }
 
-    suspend fun completeTask(taskId: String): FirebaseResult<Unit> {
+    suspend fun completeTask(taskId: String, experienceReward: Int = 10, moneyReward: Int = 10): FirebaseResult<Unit> {
         return try {
             val updates = mapOf(
                 "isCompleted" to true,
-                "completedAt" to Date()
+                "completedAt" to Date(),
+                "experienceReward" to experienceReward,
+                "moneyReward" to moneyReward
             )
             updateTask(taskId, updates)
         } catch (e: Exception) {
