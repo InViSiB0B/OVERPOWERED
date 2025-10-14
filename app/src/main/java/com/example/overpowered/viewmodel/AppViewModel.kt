@@ -276,15 +276,18 @@ class AppViewModel : ViewModel() {
     // Friend operations
     fun sendFriendRequest(playerName: String) {
         viewModelScope.launch {
+            _isLoading.value = true
+
             when (val result = repository.sendFriendRequest(playerName)) {
                 is FirebaseResult.Success -> {
-                    _error.value = "Friend request sent!"
+                    _error.value = "Friend request sent to $playerName!"
                 }
                 is FirebaseResult.Error -> {
                     _error.value = result.exception.message
                 }
                 else -> {}
             }
+            _isLoading.value = false
         }
     }
 
