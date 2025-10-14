@@ -265,7 +265,7 @@ class AppViewModel : ViewModel() {
             // Complete the task in Firebase (queued if offline, synced when online)
             repository.completeTask(taskId, experienceReward, moneyReward)
 
-            // Update profile in Firebase (queued if offline, synced when online)
+            // Update profile in Firebase (queued if offline, synced when online))
             repository.saveUserProfile(updatedProfile)
 
             // Manually refresh completed tasks after a short delay
