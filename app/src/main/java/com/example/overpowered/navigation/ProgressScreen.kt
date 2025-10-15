@@ -19,10 +19,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.overpowered.viewmodel.AppViewModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.rememberAsyncImagePainter
+import androidx.compose.material.icons.filled.Person
 
 // ---------- UI models  ----------
 data class PlayerStats(
@@ -48,14 +58,51 @@ data class TaskHistoryItem(
     val rewardGold: Int
 )
 
+// Leaderboard models
+data class LeaderboardEntry(
+    val userId: String,
+    val playerName: String,
+    val profileImageUrl: String?,
+    val level: Int,
+    val tasksCompleted: Int,
+    val rank: Int
+)
+
+enum class LeaderboardTimeframe {
+    WEEKLY, LIFETIME
+}
+
+enum class LeaderboardRankingType {
+    LEVEL, TASKS
+}
+
 // ---------- Screen ----------
 @Composable
-fun RewardsScreen(
+fun ProgressScreen(
     viewModel: AppViewModel
 ) {
     // Get data from ViewModel
     val userProfile by viewModel.userProfile.collectAsState()
     val completedTasks by viewModel.completedTasks.collectAsState()
+    val leaderboardEntries by viewModel.leaderboardEntries.collectAsState()
+    val isLoadingLeaderboard by viewModel.isLoadingLeaderboard.collectAsState()
+
+    // Leaderboard controls
+    var selectedTimeframe by remember { mutableStateOf(LeaderboardTimeframe.WEEKLY) }
+    var selectedRankingType by remember { mutableStateOf(LeaderboardRankingType.LEVEL) }
+
+    // Load leaderboard when timeframe or ranking changes
+    LaunchedEffect(selectedTimeframe, selectedRankingType) {
+        viewModel.loadLeaderboard(selectedTimeframe, selectedRankingType)
+    }
+
+    // Refresh when completedTasks changes
+    LaunchedEffect(completedTasks.size) {
+        if (completedTasks.isNotEmpty()) {
+            viewModel.loadLeaderboard(selectedTimeframe, selectedRankingType)
+        }
+    }
+
 
     // Convert to UI models
     val playerStats: PlayerStats = userProfile.toPlayerStatsForProgress()
@@ -71,6 +118,19 @@ fun RewardsScreen(
         // Stats card
         item {
             StatsSummaryCard(playerStats)
+        }
+
+        // Leaderboard card
+        item {
+            LeaderboardCard(
+                entries = leaderboardEntries,
+                currentUserId = viewModel.getCurrentUserId() ?: "",
+                isLoading = isLoadingLeaderboard,
+                selectedTimeframe = selectedTimeframe,
+                selectedRankingType = selectedRankingType,
+                onTimeframeChange = { selectedTimeframe = it },
+                onRankingTypeChange = { selectedRankingType = it }
+            )
         }
 
         // History card
@@ -225,6 +285,274 @@ private fun HistoryRow(item: TaskHistoryItem) {
             Text("+${item.rewardExp} XP", style = MaterialTheme.typography.labelLarge, color = Color(0xFF667EEA))
             Text("+${item.rewardGold} $", style = MaterialTheme.typography.labelLarge, color = Color(0xFFF6AD55))
         }
+    }
+}
+
+@Composable
+fun LeaderboardCard(
+    entries: List<LeaderboardEntry>,
+    currentUserId: String,
+    isLoading: Boolean,
+    selectedTimeframe: LeaderboardTimeframe,
+    selectedRankingType: LeaderboardRankingType,
+    onTimeframeChange: (LeaderboardTimeframe) -> Unit,
+    onRankingTypeChange: (LeaderboardRankingType) -> Unit
+) {
+    // When switching to Level ranking, automatically set to Lifetime
+    LaunchedEffect(selectedRankingType) {
+        if (selectedRankingType == LeaderboardRankingType.LEVEL && selectedTimeframe == LeaderboardTimeframe.WEEKLY) {
+            onTimeframeChange(LeaderboardTimeframe.LIFETIME)
+        }
+    }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                "Leaderboard",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            // Toggle controls
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Only show timeframe toggle when Tasks is selected
+                if (selectedRankingType == LeaderboardRankingType.TASKS) {
+                    SegmentedButton(
+                        modifier = Modifier.weight(1f),
+                        options = listOf("Weekly", "Lifetime"),
+                        selectedIndex = if (selectedTimeframe == LeaderboardTimeframe.WEEKLY) 0 else 1,
+                        onSelectionChange = { index ->
+                            onTimeframeChange(
+                                if (index == 0) LeaderboardTimeframe.WEEKLY else LeaderboardTimeframe.LIFETIME
+                            )
+                        }
+                    )
+                }
+
+                // Ranking type toggle
+                SegmentedButton(
+                    modifier = Modifier.weight(1f),
+                    options = listOf("Level", "Tasks"),
+                    selectedIndex = if (selectedRankingType == LeaderboardRankingType.LEVEL) 0 else 1,
+                    onSelectionChange = { index ->
+                        onRankingTypeChange(
+                            if (index == 0) LeaderboardRankingType.LEVEL else LeaderboardRankingType.TASKS
+                        )
+                    }
+                )
+            }
+
+            // Leaderboard content
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(32.dp),
+                        color = Color(0xFF667EEA)
+                    )
+                }
+            } else if (entries.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "🏆",
+                        fontSize = 48.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "No friends yet",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF4A5568)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Add friends to compete!",
+                        fontSize = 14.sp,
+                        color = Color(0xFF718096)
+                    )
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Top 10 entries
+                    entries.take(10).forEach { entry ->
+                        LeaderboardEntryRow(
+                            entry = entry,
+                            isCurrentUser = entry.userId == currentUserId,
+                            showLevel = selectedRankingType == LeaderboardRankingType.LEVEL
+                        )
+                    }
+                    // Show current user if they're not in top 10
+                    val currentUserEntry = entries.find { it.userId == currentUserId }
+                    if (currentUserEntry != null && currentUserEntry.rank > 10) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 8.dp),
+                            color = Color(0xFFE2E8F0)
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "Your Rank",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF718096)
+                            )
+                        }
+
+                        LeaderboardEntryRow(
+                            entry = currentUserEntry,
+                            isCurrentUser = true,
+                            showLevel = selectedRankingType == LeaderboardRankingType.LEVEL
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SegmentedButton(
+    modifier: Modifier = Modifier,
+    options: List<String>,
+    selectedIndex: Int,
+    onSelectionChange: (Int) -> Unit
+) {
+    Row(
+        modifier = modifier
+            .height(36.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFFE2E8F0))
+    ) {
+        options.forEachIndexed { index, option ->
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .background(
+                        if (selectedIndex == index) Color(0xFF667EEA) else Color.Transparent,
+                        RoundedCornerShape(8.dp)
+                    )
+                    .clickable { onSelectionChange(index) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = option,
+                    fontSize = 12.sp,
+                    fontWeight = if (selectedIndex == index) FontWeight.Bold else FontWeight.Medium,
+                    color = if (selectedIndex == index) Color.White else Color(0xFF4A5568)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun LeaderboardEntryRow(
+    entry: LeaderboardEntry,
+    isCurrentUser: Boolean,
+    showLevel: Boolean
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                if (isCurrentUser) Color(0xFF667EEA).copy(alpha = 0.1f) else Color.Transparent,
+                RoundedCornerShape(8.dp)
+            )
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Rank
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .background(
+                    when (entry.rank) {
+                        1 -> Color(0xFFFFD700) // Gold
+                        2 -> Color(0xFFC0C0C0) // Silver
+                        3 -> Color(0xFFCD7F32) // Bronze
+                        else -> Color(0xFFE2E8F0)
+                    },
+                    CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = entry.rank.toString(),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (entry.rank <= 3) Color.White else Color(0xFF4A5568)
+            )
+        }
+
+        // Profile picture
+        Card(
+            modifier = Modifier.size(36.dp),
+            shape = CircleShape,
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF667EEA))
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                if (entry.profileImageUrl != null) {
+                    Image(
+                        painter = rememberAsyncImagePainter(entry.profileImageUrl),
+                        contentDescription = "Profile",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        Icons.Filled.Person,
+                        contentDescription = "Profile",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+
+        // Name
+        Text(
+            text = entry.playerName,
+            fontSize = 14.sp,
+            fontWeight = if (isCurrentUser) FontWeight.Bold else FontWeight.Medium,
+            color = Color(0xFF4A5568),
+            modifier = Modifier.weight(1f)
+        )
+
+        // Stat
+        Text(
+            text = if (showLevel) "Lv ${entry.level}" else "${entry.tasksCompleted} tasks",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF667EEA)
+        )
     }
 }
 

@@ -8,6 +8,9 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import android.net.Uri
 import kotlinx.coroutines.tasks.await
+import com.example.overpowered.navigation.LeaderboardTimeframe
+import com.example.overpowered.navigation.LeaderboardRankingType
+import com.example.overpowered.navigation.LeaderboardEntry
 
 class AppViewModel : ViewModel() {
     private val repository = FirebaseRepository()
@@ -38,6 +41,13 @@ class AppViewModel : ViewModel() {
     private val _friends = MutableStateFlow<List<Friendship>>(emptyList())
     val friends: StateFlow<List<Friendship>> = _friends.asStateFlow()
 
+    // Leaderboard state
+    private val _leaderboardEntries = MutableStateFlow<List<LeaderboardEntry>>(emptyList())
+    val leaderboardEntries: StateFlow<List<LeaderboardEntry>> = _leaderboardEntries.asStateFlow()
+
+    private val _isLoadingLeaderboard = MutableStateFlow(false)
+    val isLoadingLeaderboard: StateFlow<Boolean> = _isLoadingLeaderboard.asStateFlow()
+
     // Exposed StateFlow for UI to observe
     val localTasks: StateFlow<List<Task>> = _tasks.map { firebaseTasks ->
         firebaseTasks.map { it.toLocalTask() }
@@ -66,13 +76,20 @@ class AppViewModel : ViewModel() {
     private fun initializeApp() {
         viewModelScope.launch {
             _isLoading.value = true
+            android.util.Log.d("AppViewModel", "Initializing app...")
 
             // Initialize authentication
             when (val authResult = repository.signInAnonymously()) {
                 is FirebaseResult.Success -> {
+                    android.util.Log.d("AppViewModel", "Auth successful! UserId: ${authResult.data}")
+
+                    // Initialize task tracking for existing users
+                    repository.initializeTaskTracking()
+
                     loadUserData()
                 }
                 is FirebaseResult.Error -> {
+                    android.util.Log.e("AppViewModel", "Auth failed: ${authResult.exception.message}")
                     _error.value = "Authentication failed: ${authResult.exception.message}"
                 }
                 else -> {}
@@ -193,6 +210,8 @@ class AppViewModel : ViewModel() {
         }
     }
 
+    fun getCurrentUserId(): String? = repository.getCurrentUserId()
+
     fun updateCustomization(
         selectedFrame: String? = null,
         selectedTitle: String? = null,
@@ -247,29 +266,25 @@ class AppViewModel : ViewModel() {
 
     fun completeTask(taskId: String, experienceReward: Int = 10, moneyReward: Int = 10) {
         viewModelScope.launch {
-            // Optimistically update local state immediately (works offline)
-            val currentProfile = _userProfile.value
-            val newExperience = currentProfile.playerExperience + experienceReward
-            val newMoney = currentProfile.playerMoney + moneyReward
-            val newLevel = (newExperience / 100) + 1
+            android.util.Log.d("AppViewModel", "Completing task: $taskId")
 
-            val updatedProfile = currentProfile.copy(
-                playerExperience = newExperience,
-                playerMoney = newMoney,
-                playerLevel = newLevel
-            )
+            // Complete the task in Firebase - this will update EVERYTHING including weekly counter
+            val result = repository.completeTask(taskId, experienceReward, moneyReward)
+            android.util.Log.d("AppViewModel", "Task completion result: $result")
 
-            // Update local state first (instant feedback, works offline).
-            _userProfile.value = updatedProfile
+            // Manually refresh the profile to get updated stats
+            kotlinx.coroutines.delay(300) // Small delay to ensure Firebase writes complete
+            when (val profileResult = repository.getUserProfile()) {
+                is FirebaseResult.Success -> {
+                    _userProfile.value = profileResult.data
+                    android.util.Log.d("AppViewModel", "Profile refreshed - weeklyTasks: ${profileResult.data.weeklyTasksCompleted}, exp: ${profileResult.data.playerExperience}")
+                }
+                else -> {
+                    android.util.Log.e("AppViewModel", "Failed to refresh profile")
+                }
+            }
 
-            // Complete the task in Firebase (queued if offline, synced when online)
-            repository.completeTask(taskId, experienceReward, moneyReward)
-
-            // Update profile in Firebase (queued if offline, synced when online)
-            repository.saveUserProfile(updatedProfile)
-
-            // Manually refresh completed tasks after a short delay
-            kotlinx.coroutines.delay(500) // Wait for Firebase to process
+            // Refresh completed tasks and leaderboard
             refreshCompletedTasks()
         }
     }
@@ -353,6 +368,70 @@ class AppViewModel : ViewModel() {
     fun ignoreFriendRequest(requestId: String) {
         viewModelScope.launch {
             repository.ignoreFriendRequest(requestId)
+        }
+    }
+
+    // Load leaderboard data
+    fun loadLeaderboard(timeframe: LeaderboardTimeframe, rankingType: LeaderboardRankingType) {
+        viewModelScope.launch {
+            _isLoadingLeaderboard.value = true
+
+            try {
+                // Get friend IDs
+                val friendIds = _friends.value.map { it.friendId }
+
+                if (friendIds.isEmpty()) {
+                    _leaderboardEntries.value = emptyList()
+                    _isLoadingLeaderboard.value = false
+                    return@launch
+                }
+
+                // Add current user to the list
+                val currentUserId = repository.getCurrentUserId()
+                val allUserIds = if (currentUserId != null) {
+                    friendIds + currentUserId
+                } else {
+                    friendIds
+                }
+
+                // Get friend profiles
+                val profilesResult = repository.getFriendProfiles(allUserIds)
+                val profiles = (profilesResult as? FirebaseResult.Success)?.data ?: emptyList()
+
+                // Get task counts
+                val weekly = timeframe == LeaderboardTimeframe.WEEKLY
+                val taskCountsResult = repository.getUserTaskCounts(allUserIds, weekly)
+                val taskCounts = (taskCountsResult as? FirebaseResult.Success)?.data ?: emptyMap()
+
+                // Create leaderboard entries
+                val entries = profiles.map { profile ->
+                    LeaderboardEntry(
+                        userId = profile.userId,
+                        playerName = profile.playerName,
+                        profileImageUrl = profile.profileImageUrl,
+                        level = profile.playerLevel,
+                        tasksCompleted = taskCounts[profile.userId] ?: 0,
+                        rank = 0 // Will be assigned after sorting
+                    )
+                }
+
+                // Sort and rank
+                val sortedEntries = when (rankingType) {
+                    LeaderboardRankingType.LEVEL -> entries.sortedByDescending { it.level }
+                    LeaderboardRankingType.TASKS -> entries.sortedByDescending { it.tasksCompleted }
+                }
+
+                val rankedEntries = sortedEntries.mapIndexed { index, entry ->
+                    entry.copy(rank = index + 1)
+                }
+
+                _leaderboardEntries.value = rankedEntries
+            } catch (e: Exception) {
+                android.util.Log.e("AppViewModel", "Error loading leaderboard: ${e.message}", e)
+                _leaderboardEntries.value = emptyList()
+            } finally {
+                _isLoadingLeaderboard.value = false
+            }
         }
     }
 
