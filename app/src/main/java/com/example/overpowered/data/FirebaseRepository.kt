@@ -173,7 +173,12 @@ class FirebaseRepository {
     }
 
     suspend fun completeTask(taskId: String, experienceReward: Int = 10, moneyReward: Int = 10): FirebaseResult<Unit> {
+        val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
+
         return try {
+            android.util.Log.d("FirebaseRepo", "Completing task: $taskId")
+
+            // Mark task as completed
             val updates = mapOf(
                 "isCompleted" to true,
                 "completedAt" to Date(),
@@ -181,7 +186,56 @@ class FirebaseRepository {
                 "moneyReward" to moneyReward
             )
             updateTask(taskId, updates)
+            android.util.Log.d("FirebaseRepo", "Task marked as completed")
+
+            // Update profile with stats AND counters
+            val profileResult = getUserProfile()
+            if (profileResult is FirebaseResult.Success) {
+                val profile = profileResult.data
+                android.util.Log.d("FirebaseRepo", "Current profile - weeklyTasks: ${profile.weeklyTasksCompleted}, lifetimeTasks: ${profile.lifetimeTasksCompleted}")
+
+                // Calculate new stats
+                val newExperience = profile.playerExperience + experienceReward
+                val newMoney = profile.playerMoney + moneyReward
+                val newLevel = (newExperience / 100) + 1
+
+                // Check if we need to reset weekly counter
+                val needsReset = isNewWeek(profile.weekStartDate)
+                android.util.Log.d("FirebaseRepo", "Needs weekly reset: $needsReset")
+
+                val updatedProfile = if (needsReset) {
+                    // Reset weekly counter for new week
+                    profile.copy(
+                        playerExperience = newExperience,
+                        playerMoney = newMoney,
+                        playerLevel = newLevel,
+                        weeklyTasksCompleted = 1,
+                        weekStartDate = getWeekStartDate(),
+                        lifetimeTasksCompleted = profile.lifetimeTasksCompleted + 1,
+                        lastUpdated = Date()
+                    )
+                } else {
+                    // Increment both counters
+                    profile.copy(
+                        playerExperience = newExperience,
+                        playerMoney = newMoney,
+                        playerLevel = newLevel,
+                        weeklyTasksCompleted = profile.weeklyTasksCompleted + 1,
+                        lifetimeTasksCompleted = profile.lifetimeTasksCompleted + 1,
+                        lastUpdated = Date()
+                    )
+                }
+
+                android.util.Log.d("FirebaseRepo", "Updated profile - weeklyTasks: ${updatedProfile.weeklyTasksCompleted}, lifetimeTasks: ${updatedProfile.lifetimeTasksCompleted}")
+                saveUserProfile(updatedProfile)
+                android.util.Log.d("FirebaseRepo", "Profile saved successfully")
+            } else {
+                android.util.Log.e("FirebaseRepo", "Failed to get profile")
+            }
+
+            FirebaseResult.Success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("FirebaseRepo", "Error completing task: ${e.message}", e)
             FirebaseResult.Error(e)
         }
     }
@@ -657,4 +711,128 @@ class FirebaseRepository {
             FirebaseResult.Error(e)
         }
     }
+
+    // Get profiles of all friends
+    suspend fun getFriendProfiles(friendIds: List<String>): FirebaseResult<List<UserProfile>> {
+        if (friendIds.isEmpty()) {
+            return FirebaseResult.Success(emptyList())
+        }
+
+        return try {
+            val profiles = mutableListOf<UserProfile>()
+
+            // Firestore 'in' query can only handle 10 items at a time
+            friendIds.chunked(10).forEach { chunk ->
+                val snapshot = firestore.collection("users")
+                    .whereIn("userId", chunk)
+                    .get()
+                    .await()
+
+                snapshot.documents.forEach { doc ->
+                    doc.toObject(UserProfile::class.java)?.let { profiles.add(it) }
+                }
+            }
+
+            FirebaseResult.Success(profiles)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
+    // Get task counts for users
+    suspend fun getUserTaskCounts(userIds: List<String>, weekly: Boolean): FirebaseResult<Map<String, Int>> {
+        if (userIds.isEmpty()) {
+            return FirebaseResult.Success(emptyMap())
+        }
+
+        return try {
+            val taskCounts = mutableMapOf<String, Int>()
+
+            android.util.Log.d("FirebaseRepo", "Getting task counts - weekly: $weekly, users: ${userIds.size}")
+
+            // Both weekly and lifetime now read from profile
+            for (userId in userIds) {
+                val doc = firestore.collection("users")
+                    .document(userId)
+                    .get()
+                    .await()
+
+                val profile = doc.toObject(UserProfile::class.java)
+                val count = if (weekly) {
+                    profile?.weeklyTasksCompleted ?: 0
+                } else {
+                    profile?.lifetimeTasksCompleted ?: 0
+                }
+                taskCounts[userId] = count
+                android.util.Log.d("FirebaseRepo", "User $userId - ${if (weekly) "Weekly" else "Lifetime"} tasks: $count")
+            }
+
+            android.util.Log.d("FirebaseRepo", "Final task counts: $taskCounts")
+            FirebaseResult.Success(taskCounts)
+        } catch (e: Exception) {
+            android.util.Log.e("FirebaseRepo", "Error getting task counts: ${e.message}", e)
+            FirebaseResult.Error(e)
+        }
+    }
+
+    // Helper to check if we need to reset weekly counter
+    private fun isNewWeek(weekStartDate: Date?): Boolean {
+        if (weekStartDate == null) return true
+
+        val calendar = java.util.Calendar.getInstance()
+        calendar.time = weekStartDate
+        val weekStart = calendar.clone() as java.util.Calendar
+
+        val now = java.util.Calendar.getInstance()
+
+        // Check if current date is in a different week
+        val weeksDiff = (now.timeInMillis - weekStart.timeInMillis) / (7 * 24 * 60 * 60 * 1000)
+        return weeksDiff >= 1
+    }
+
+    // Get start of current week
+    private fun getWeekStartDate(): Date {
+        val calendar = java.util.Calendar.getInstance()
+        calendar.set(java.util.Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
+        calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+        calendar.set(java.util.Calendar.MINUTE, 0)
+        calendar.set(java.util.Calendar.SECOND, 0)
+        calendar.set(java.util.Calendar.MILLISECOND, 0)
+        return calendar.time
+    }
+
+    suspend fun initializeTaskTracking(): FirebaseResult<Unit> {
+        return try {
+            val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
+            val profileResult = getUserProfile()
+            if (profileResult is FirebaseResult.Success) {
+                val profile = profileResult.data
+
+                // Only initialize if not already set
+                if (profile.weekStartDate == null) {
+                    // Count existing completed tasks for lifetime
+                    val completedTasksSnapshot = firestore.collection("users")
+                        .document(userId)
+                        .collection("tasks")
+                        .whereEqualTo("isCompleted", true)
+                        .get()
+                        .await()
+
+                    val lifetimeCount = completedTasksSnapshot.size()
+
+                    val updatedProfile = profile.copy(
+                        weeklyTasksCompleted = 0,
+                        weekStartDate = getWeekStartDate(),
+                        lifetimeTasksCompleted = lifetimeCount  // Initialize with actual count
+                    )
+                    saveUserProfile(updatedProfile)
+                    android.util.Log.d("FirebaseRepo", "Initialized task tracking - lifetime: $lifetimeCount")
+                }
+            }
+            FirebaseResult.Success(Unit)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
 }
+

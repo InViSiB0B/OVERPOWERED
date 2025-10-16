@@ -16,6 +16,11 @@ data class UserProfile(
     val selectedFrame: String? = null,
     val selectedTitle: String? = null,
     val selectedTheme: String? = null,
+    val weeklyTasksCompleted: Int = 0,
+    val weekStartDate: Date? = null,
+    val lifetimeTasksCompleted: Int = 0,
+
+
     @ServerTimestamp
     val lastUpdated: Date? = null,
     @ServerTimestamp

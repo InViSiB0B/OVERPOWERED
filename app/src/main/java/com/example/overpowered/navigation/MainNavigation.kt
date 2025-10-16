@@ -27,7 +27,7 @@ import androidx.compose.material3.contentColorFor
 import androidx.compose.ui.zIndex
 import com.example.overpowered.viewmodel.AppViewModel
 
-enum class Tab { Today, Rewards, Shop }
+enum class Tab { Today, Progress, Shop }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,10 +91,10 @@ fun MainNavigation(
                                 showProfile = false
                                 showEditProfile = false
                             }
-                            tab = Tab.Rewards
+                            tab = Tab.Progress
                         }
                     ) {
-                        Icon(Icons.Filled.Home, contentDescription = "Rewards", modifier = Modifier.size(28.dp))
+                        Icon(Icons.Filled.Home, contentDescription = "Progress", modifier = Modifier.size(28.dp))
                     }
 
                     Spacer(Modifier.weight(.5f)) // make room for center FAB
@@ -217,7 +217,7 @@ fun MainNavigation(
                             }
                         }
                     )
-                    Tab.Rewards -> RewardsScreen(viewModel = viewModel)
+                    Tab.Progress -> ProgressScreen(viewModel = viewModel)
                     Tab.Shop -> ShopScreen(
                         playerMoney = userProfile.playerMoney ?: 100,
                         purchasedItems = userProfile.purchasedItems?.toSet() ?: emptySet(),
@@ -288,7 +288,7 @@ fun TopStatusBar(
                     } else {
                         when (currentTab) {
                             Tab.Today -> "Today"
-                            Tab.Rewards -> "Rewards"
+                            Tab.Progress -> "Progress"
                             Tab.Shop -> "Shop"
                         }
                     },
