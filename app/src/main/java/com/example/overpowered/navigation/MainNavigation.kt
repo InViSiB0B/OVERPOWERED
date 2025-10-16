@@ -340,7 +340,7 @@ fun TopStatusBar(
                         }
                     }
 
-                    // Right side - Notification bell
+                    // Right side - notification bell
                     NotificationButton(
                         notificationCount = notificationCount,
                         onClick = onNotificationClick
