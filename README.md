@@ -3,7 +3,7 @@
 [![Android](https://img.shields.io/badge/Platform-Android%2010%2B-green.svg)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Language-Kotlin-blue.svg)](https://kotlinlang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Status](https://img.shields.io/badge/Status-MVP%20Development-orange.svg)](#project-status)
+[![Status](https://img.shields.io/badge/Status-Beta%20Development-orange.svg)](#project-status)
 
 ## Introduction
 
