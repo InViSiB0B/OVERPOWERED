@@ -121,7 +121,8 @@ class FirebaseRepository {
                 "isCompleted" to taskWithUserId.isCompleted,
                 "createdAt" to taskWithUserId.createdAt,
                 "completedAt" to taskWithUserId.completedAt,
-                "userId" to taskWithUserId.userId
+                "userId" to taskWithUserId.userId,
+                "tags" to taskWithUserId.tags
             )
 
             val docRef = firestore.collection("users")
@@ -241,7 +242,7 @@ class FirebaseRepository {
     }
 
     suspend fun addTag(taskId: String, vararg tags: String): FirebaseResult<Unit> {
-        // TODO: call getCurrentUserId()?
+        val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
 
         if (tags.isEmpty()) {
             return FirebaseResult.Error(IllegalArgumentException("No tags supplied"))
@@ -249,9 +250,12 @@ class FirebaseRepository {
 
         return try {
             val updates = mapOf(
-                "tags" to FieldValue.arrayUnion(*tags)
+                "tags" to FieldValue.arrayUnion(*tags),
+                "lastUpdated" to Date()
             )
-            firestore.collection("tasks")
+            firestore.collection("users")
+                .document(userId)
+                .collection("tasks")
                 .document(taskId)
                 .update(updates)
                 .await()
@@ -263,7 +267,7 @@ class FirebaseRepository {
     }
 
     suspend fun removeTag(taskId: String, vararg tags: String): FirebaseResult<Unit> {
-        // TODO: call getCurrentUserId()?
+        val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
 
         if (tags.isEmpty()) {
             return FirebaseResult.Error(IllegalArgumentException("No tags supplied"))
@@ -271,9 +275,12 @@ class FirebaseRepository {
 
         return try {
             val updates = mapOf(
-                "tags" to FieldValue.arrayRemove(*tags)
+                "tags" to FieldValue.arrayRemove(*tags),
+                "lastUpdated" to Date()
             )
-            firestore.collection("tasks")
+            firestore.collection("users")
+                .document(userId)
+                .collection("tasks")
                 .document(taskId)
                 .update(updates)
                 .await()
@@ -285,7 +292,7 @@ class FirebaseRepository {
     }
 
     suspend fun setDeadline(taskId: String, deadline: Date?): FirebaseResult<Unit> {
-        // TODO: call getCurrentUserId()?
+        val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
 
         val updates = if (deadline != null) {
             mapOf(
@@ -293,7 +300,6 @@ class FirebaseRepository {
                 "lastUpdated" to Date()
             )
         } else {
-            // Delete the "deadline" field using FieldValue.delete() instead of setting "deadline" to null
             mapOf(
                 "deadline" to FieldValue.delete(),
                 "lastUpdated" to Date()
@@ -301,7 +307,9 @@ class FirebaseRepository {
         }
 
         return try {
-            firestore.collection("tasks")
+            firestore.collection("users")
+                .document(userId)
+                .collection("tasks")
                 .document(taskId)
                 .update(updates)
                 .await()
@@ -311,6 +319,7 @@ class FirebaseRepository {
             FirebaseResult.Error(e)
         }
     }
+
 
     // Real-time task updates (active tasks only)
     fun observeUserTasks(): Flow<FirebaseResult<List<FirebaseTask>>> {
@@ -447,6 +456,33 @@ class FirebaseRepository {
                 }
 
             awaitClose { listener.remove() }
+        }
+    }
+
+    // Get tag statistics
+    suspend fun getTagStatistics(): FirebaseResult<Map<String, Int>> {
+        val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
+
+        return try {
+            val tasksSnapshot = firestore.collection("users")
+                .document(userId)
+                .collection("tasks")
+                .whereEqualTo("isCompleted", true)
+                .get()
+                .await()
+
+            val tagCounts = mutableMapOf<String, Int>()
+
+            tasksSnapshot.documents.forEach { doc ->
+                val task = doc.toObject(FirebaseTask::class.java)
+                task?.tags?.forEach { tag ->
+                    tagCounts[tag] = (tagCounts[tag] ?: 0) + 1
+                }
+            }
+
+            FirebaseResult.Success(tagCounts)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
         }
     }
 

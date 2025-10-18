@@ -200,8 +200,8 @@ fun MainNavigation(
                 when (tab) {
                     Tab.Today -> TodayScreen(
                         tasks = tasks,
-                        onAddTask = { title, description ->
-                            viewModel.addTask(title, description)
+                        onAddTask = { title, description, tags ->
+                            viewModel.addTask(title, description, tags)
                         },
                         onCompleteTask = { task ->
                             // Find the Firebase task ID

@@ -61,12 +61,14 @@ class AppViewModel : ViewModel() {
     fun FirebaseTask.toLocalTask(): Task = Task(
         id = this.id.hashCode().toLong(),
         title = this.title,
-        description = this.description
+        description = this.description,
+        tags = this.tags
     )
 
     fun Task.toFirebaseTask(): FirebaseTask = FirebaseTask(
         title = this.title,
-        description = this.description
+        description = this.description,
+        tags = this.tags
     )
 
     init {
@@ -248,11 +250,12 @@ class AppViewModel : ViewModel() {
     }
 
     // Task operations
-    fun addTask(title: String, description: String? = null) {
+    fun addTask(title: String, description: String? = null, tags: List<String> = emptyList()) {
         viewModelScope.launch {
             val task = FirebaseTask(
                 title = title,
-                description = description
+                description = description,
+                tags = tags
             )
 
             when (val result = repository.addTask(task)) {
@@ -294,6 +297,46 @@ class AppViewModel : ViewModel() {
             when (val result = repository.deleteTask(taskId)) {
                 is FirebaseResult.Error -> {
                     _error.value = "Failed to delete task: ${result.exception.message}"
+                }
+                else -> {}
+            }
+        }
+    }
+    // Tag operations
+    fun addTagToTask(taskId: String, tag: String) {
+        viewModelScope.launch {
+            when (val result = repository.addTag(taskId, tag)) {
+                is FirebaseResult.Error -> {
+                    _error.value = "Failed to add tag: ${result.exception.message}"
+                }
+                else -> {}
+            }
+        }
+    }
+
+    fun removeTagFromTask(taskId: String, tag: String) {
+        viewModelScope.launch {
+            when (val result = repository.removeTag(taskId, tag)) {
+                is FirebaseResult.Error -> {
+                    _error.value = "Failed to remove tag: ${result.exception.message}"
+                }
+                else -> {}
+            }
+        }
+    }
+
+    // Tag statistics
+    private val _tagStatistics = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val tagStatistics: StateFlow<Map<String, Int>> = _tagStatistics.asStateFlow()
+
+    fun loadTagStatistics() {
+        viewModelScope.launch {
+            when (val result = repository.getTagStatistics()) {
+                is FirebaseResult.Success -> {
+                    _tagStatistics.value = result.data
+                }
+                is FirebaseResult.Error -> {
+                    android.util.Log.e("AppViewModel", "Failed to load tag stats: ${result.exception.message}")
                 }
                 else -> {}
             }

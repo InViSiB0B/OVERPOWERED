@@ -19,6 +19,7 @@ data class UserProfile(
     val weeklyTasksCompleted: Int = 0,
     val weekStartDate: Date? = null,
     val lifetimeTasksCompleted: Int = 0,
+    val tags: List<String> = emptyList(),
 
 
     @ServerTimestamp
