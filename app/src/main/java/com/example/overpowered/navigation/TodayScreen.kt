@@ -37,20 +37,22 @@ data class Task(
     val id: Long = System.currentTimeMillis(),
     val title: String,
     val description: String? = null,
-    val dueDate: Long? = null
+    val dueDate: Long? = null,
+    val tags: List<String> = emptyList()
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodayScreen(
     tasks: List<Task> = emptyList(),
-    onAddTask: (String, String?) -> Unit = { _, _ -> },
+    onAddTask: (String, String?, List<String>) -> Unit = { _, _, _ -> },
     onCompleteTask: (Task) -> Unit = { _ -> },
     onDeleteTask: (Task) -> Unit = { _ -> }
 ) {
     var isTaskInputVisible by remember { mutableStateOf(false) }
     var taskTitle by remember { mutableStateOf("") }
     var taskDescription by remember { mutableStateOf("") }
+    var taskTags by remember { mutableStateOf("") }
 
     var showDatePicker by remember { mutableStateOf(false) }
     var dueDate by remember { mutableStateOf<Long?>(null) }
@@ -156,22 +158,48 @@ fun TodayScreen(
                                 unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         )
+
+                        // ADD THIS: Tags input
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = taskTags,
+                            onValueChange = { taskTags = it },
+                            label = { Text("Tags (comma-separated, optional)") },
+                            placeholder = { Text("work, urgent, project") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(
                             onClick = {
                                 if (taskTitle.isNotBlank()) {
+                                    // Parse tags from comma-separated string
+                                    val tags = taskTags
+                                        .split(",")
+                                        .map { it.trim() }
+                                        .filter { it.isNotBlank() }
+
                                     onAddTask(
                                         taskTitle,
-                                        taskDescription.takeIf { it.isNotBlank() }
+                                        taskDescription.takeIf { it.isNotBlank() },
+                                        tags
                                     )
                                     taskTitle = "" // Clear input
                                     taskDescription = "" // Clear input
+                                    taskTags = "" // Clear input
                                     dueDate = null // Clear date
                                     isTaskInputVisible = false // Collapse the input section
                                 }
                             },
                             modifier = Modifier.align(Alignment.End),
-                            enabled = taskTitle.isNotBlank() // Enable button only if title is not empty
+                            enabled = taskTitle.isNotBlank()
                         ) {
                             Text("Add Task")
                         }
@@ -291,7 +319,7 @@ fun TaskItem(task: Task, onComplete: () -> Unit, onDelete: () -> Unit) {
         ) {
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp) // More space between title and description
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
                     text = task.title,
@@ -305,6 +333,28 @@ fun TaskItem(task: Task, onComplete: () -> Unit, onDelete: () -> Unit) {
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+
+                // Display tags
+                if (task.tags.isNotEmpty()) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        task.tags.forEach { tag ->
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer
+                            ) {
+                                Text(
+                                    text = tag,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
