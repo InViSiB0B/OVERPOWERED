@@ -204,7 +204,7 @@ fun MainNavigation(
                             viewModel.addTask(title, description, tags)
                         },
                         onCompleteTask = { task ->
-                            // Find the Firebase task ID
+                            // Find the Firebase task IDs
                             val firebaseTask = viewModel.findFirebaseTaskById(task.id)
                             firebaseTask?.let {
                                 viewModel.completeTask(it.id, experienceReward = 10, moneyReward = 10)
