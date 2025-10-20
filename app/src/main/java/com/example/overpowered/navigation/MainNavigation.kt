@@ -52,6 +52,8 @@ fun MainNavigation(
     val tasks by viewModel.localTasks.collectAsState()
     val pendingFriendRequests by viewModel.pendingFriendRequests.collectAsState()
 
+    val isSelected = (tab == Tab.Today && !showProfile && !showEditProfile)
+
     // Show error messages
     error?.let { errorMessage ->
         LaunchedEffect(errorMessage) {
@@ -135,11 +137,14 @@ fun MainNavigation(
                         .size(96.dp)
                         .zIndex(1f),
                     shape = CircleShape,
-                    containerColor = if (tab == Tab.Today && !showProfile)
-                        MaterialTheme.colorScheme.primary
+                    containerColor = if (isSelected)
+                        MaterialTheme.colorScheme.secondary
                     else
-                        MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = contentColorFor(MaterialTheme.colorScheme.primary)
+                        MaterialTheme.colorScheme.secondary,
+                    contentColor = if (isSelected)
+                        MaterialTheme.colorScheme.onSecondary
+                    else
+                        MaterialTheme.colorScheme.onSecondaryContainer
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.List,
