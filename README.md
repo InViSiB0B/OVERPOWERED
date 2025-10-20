@@ -27,7 +27,6 @@ People with ADHD often struggle with traditional productivity tools because they
 
 - **Enhanced Task Tracking**: The User can set long term goals that short term tasks will contribute to, with progress bars to visualize growth
 - **Friends and Leaderboards**: Users can add other users to their friends list to compete in Leaderboards for task completion, and level
-- **User Friendly Tutorial**: Handy walkthrough that guides first time users through the different features and functionalities of the app
 
 
 ### ADHD-Specific Features
@@ -129,6 +128,6 @@ This project is currently maintained by the Full Sail University Capstone team l
 
 ## Project Status
 
-**Current Status**: MVP Development (Alpha Phase)
+**Current Status**: Beta Development
 
 ---
