@@ -3,14 +3,14 @@ package com.example.overpowered.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.overpowered.data.*
-import com.example.overpowered.navigation.Task
+import com.example.overpowered.today.Task
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import android.net.Uri
 import kotlinx.coroutines.tasks.await
-import com.example.overpowered.navigation.LeaderboardTimeframe
-import com.example.overpowered.navigation.LeaderboardRankingType
-import com.example.overpowered.navigation.LeaderboardEntry
+import com.example.overpowered.progress.LeaderboardTimeframe
+import com.example.overpowered.progress.LeaderboardRankingType
+import com.example.overpowered.progress.LeaderboardEntry
 
 class AppViewModel : ViewModel() {
     private val repository = FirebaseRepository()

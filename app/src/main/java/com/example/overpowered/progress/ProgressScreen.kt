@@ -1,4 +1,4 @@
-package com.example.overpowered.navigation
+package com.example.overpowered.progress
 
 
 import com.example.overpowered.data.UserProfile
@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.ui.graphics.vector.ImageVector
 
 // ---------- UI models  ----------
 data class PlayerStats(
@@ -205,7 +206,7 @@ fun StatsSummaryCard(stats: PlayerStats) {
 
 @Composable
 private fun StatPill(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     label: String,
     value: String,
     tint: Color

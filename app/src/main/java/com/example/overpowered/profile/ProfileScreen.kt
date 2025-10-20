@@ -1,4 +1,4 @@
-package com.example.overpowered.navigation
+package com.example.overpowered.profile
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape

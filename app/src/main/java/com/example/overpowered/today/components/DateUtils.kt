@@ -1,4 +1,4 @@
-package com.example.overpowered.navigation.utils
+package com.example.overpowered.today.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember

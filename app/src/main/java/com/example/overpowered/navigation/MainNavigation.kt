@@ -25,6 +25,12 @@ import coil.compose.rememberAsyncImagePainter
 import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.contentColorFor
 import androidx.compose.ui.zIndex
+import com.example.overpowered.profile.ProfileScreen
+import com.example.overpowered.profile.components.EditProfileScreen
+import com.example.overpowered.profile.components.FriendRequestsDialog
+import com.example.overpowered.progress.ProgressScreen
+import com.example.overpowered.shop.ShopScreen
+import com.example.overpowered.today.TodayScreen
 import com.example.overpowered.viewmodel.AppViewModel
 
 enum class Tab { Today, Progress, Shop }
@@ -207,7 +213,11 @@ fun MainNavigation(
                             // Find the Firebase task IDs
                             val firebaseTask = viewModel.findFirebaseTaskById(task.id)
                             firebaseTask?.let {
-                                viewModel.completeTask(it.id, experienceReward = 10, moneyReward = 10)
+                                viewModel.completeTask(
+                                    it.id,
+                                    experienceReward = 10,
+                                    moneyReward = 10
+                                )
                             }
                         },
                         onDeleteTask = { task ->

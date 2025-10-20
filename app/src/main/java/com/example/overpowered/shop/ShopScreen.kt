@@ -1,4 +1,4 @@
-package com.example.overpowered.navigation
+package com.example.overpowered.shop
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

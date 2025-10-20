@@ -1,4 +1,4 @@
-package com.example.overpowered.navigation
+package com.example.overpowered.profile.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
+import com.example.overpowered.shop.ShopItem
 
 @Composable
 fun EditProfileScreen(
