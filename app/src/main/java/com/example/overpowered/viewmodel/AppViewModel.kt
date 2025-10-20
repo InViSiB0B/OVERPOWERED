@@ -250,7 +250,12 @@ class AppViewModel : ViewModel() {
     }
 
     // Task operations
-    fun addTask(title: String, description: String? = null, tags: List<String> = emptyList()) {
+    fun addTask(
+        title: String,
+        description: String? = null,
+        tags: List<String> = emptyList(),
+        dueDate: Long?
+    ) {
         viewModelScope.launch {
             val task = FirebaseTask(
                 title = title,

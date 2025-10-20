@@ -15,7 +15,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -45,7 +44,7 @@ data class Task(
 @Composable
 fun TodayScreen(
     tasks: List<Task> = emptyList(),
-    onAddTask: (String, String?, List<String>) -> Unit = { _, _, _ -> },
+    onAddTask: (String, String?, List<String>, Long?) -> Unit = { _, _, _, _ -> },
     onCompleteTask: (Task) -> Unit = { _ -> },
     onDeleteTask: (Task) -> Unit = { _ -> }
 ) {
@@ -186,11 +185,15 @@ fun TodayScreen(
                                         .map { it.trim() }
                                         .filter { it.isNotBlank() }
 
+                                    val newDue = dueDate
+
                                     onAddTask(
                                         taskTitle,
                                         taskDescription.takeIf { it.isNotBlank() },
-                                        tags
+                                        tags,
+                                        newDue
                                     )
+
                                     taskTitle = "" // Clear input
                                     taskDescription = "" // Clear input
                                     taskTags = "" // Clear input
@@ -315,8 +318,18 @@ fun TaskItem(task: Task, onComplete: () -> Unit, onDelete: () -> Unit) {
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 20.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            if(task.dueDate != null) {
+                DateBadge(task.dueDate, modifier = Modifier.size(56.dp))
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .padding(end = 16.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                )
+            }
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -393,6 +406,45 @@ fun TaskItem(task: Task, onComplete: () -> Unit, onDelete: () -> Unit) {
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun DateBadge(dueMillis: Long, modifier: Modifier = Modifier) {
+    // Convert millis -> LocalDate in device timezone
+    val date = remember(dueMillis) {
+        java.time.Instant.ofEpochMilli(dueMillis)
+            .atZone(java.time.ZoneId.systemDefault())
+            .toLocalDate()
+    }
+
+    val month = remember(date) { date.month.name.take(3) } // e.g. "JAN"
+    val day = remember(date) { date.dayOfMonth.toString() }
+
+    Surface(
+        modifier = modifier.size(56.dp),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.primaryContainer,
+        tonalElevation = 2.dp,
+        shadowElevation = 2.dp
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = month.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Text(
+                text = day,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
         }
     }
 }
