@@ -19,18 +19,19 @@ fun TaskItem(task: Task, onComplete: () -> Unit, onDelete: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
         shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiary),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 20.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (task.dueDate != null) {
                 DateBadge(task.dueDate, modifier = Modifier.size(56.dp))
             } else {
                 Box(
-                    modifier = Modifier.size(56.dp).padding(end = 16.dp)
+                    modifier = Modifier.size(56.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                 )
@@ -44,12 +45,12 @@ fun TaskItem(task: Task, onComplete: () -> Unit, onDelete: () -> Unit) {
                 if (task.tags.isNotEmpty()) {
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 4.dp)) {
                         task.tags.forEach { tag ->
-                            Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.primaryContainer) {
+                            Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.secondary) {
                                 Text(
                                     text = tag,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    color = MaterialTheme.colorScheme.onSecondary
                                 )
                             }
                         }
@@ -60,7 +61,7 @@ fun TaskItem(task: Task, onComplete: () -> Unit, onDelete: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(
                     onClick = onComplete,
-                    modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.tertiary)
+                    modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.35F))
                 ) {
                     Icon(Icons.Filled.CheckCircle, contentDescription = "Complete Task", tint = MaterialTheme.colorScheme.onTertiary)
                 }

@@ -62,24 +62,23 @@ fun TodayScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    TaskDateAssistChip(
-                        dueDate = dueDate,
-                        onClick = { /* open date picker inside the input card */ }
-                    )
-
                     Text(
                         text = if (isTaskInputVisible) "Add New Task" else "Create a Task",
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
                     )
 
                     IconButton(
-                        onClick = { isTaskInputVisible = !isTaskInputVisible }
+                        onClick = { isTaskInputVisible = !isTaskInputVisible },
+                        colors = IconButtonDefaults.filledIconButtonColors( // ← uses primary/onPrimary
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
                     ) {
                         Icon(
                             imageVector = if (isTaskInputVisible) Icons.Filled.Delete else Icons.Filled.Add,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
+                            contentDescription = null
                         )
                     }
                 }

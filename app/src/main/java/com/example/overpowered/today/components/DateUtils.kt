@@ -17,3 +17,16 @@ fun formatDate(millis: Long): String {
         .toLocalDate()
     return date.format(formatter)
 }
+
+fun normalizePickerMillisToLocalMidnight(
+    selectedUtcMillis: Long,
+    zone: java.time.ZoneId = java.time.ZoneId.systemDefault()
+): Long {
+    // Treat picker value as a UTC date-only
+    val localDate = java.time.Instant.ofEpochMilli(selectedUtcMillis)
+        .atZone(java.time.ZoneOffset.UTC)
+        .toLocalDate()
+
+    // Store as local midnight (handles DST with atStartOfDay)
+    return localDate.atStartOfDay(zone).toInstant().toEpochMilli()
+}

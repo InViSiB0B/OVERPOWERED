@@ -62,13 +62,15 @@ class AppViewModel : ViewModel() {
         id = this.id.hashCode().toLong(),
         title = this.title,
         description = this.description,
-        tags = this.tags
+        tags = this.tags,
+        dueDate = this.dueDate
     )
 
     fun Task.toFirebaseTask(): FirebaseTask = FirebaseTask(
         title = this.title,
         description = this.description,
-        tags = this.tags
+        tags = this.tags,
+        dueDate = this.dueDate
     )
 
     init {
@@ -260,7 +262,8 @@ class AppViewModel : ViewModel() {
             val task = FirebaseTask(
                 title = title,
                 description = description,
-                tags = tags
+                tags = tags,
+                dueDate = dueDate
             )
 
             when (val result = repository.addTask(task)) {
@@ -272,7 +275,12 @@ class AppViewModel : ViewModel() {
         }
     }
 
-    fun completeTask(taskId: String, experienceReward: Int = 10, moneyReward: Int = 10) {
+    fun completeTask(taskId: String?, experienceReward: Int = 10, moneyReward: Int = 10) {
+        if (taskId == null) {
+            _error.value = "Cannot complete a task with a null ID."
+            android.util.Log.e("AppViewModel", "completeTask was called with a null taskId.")
+            return
+        }
         viewModelScope.launch {
             android.util.Log.d("AppViewModel", "Completing task: $taskId")
 
@@ -297,7 +305,12 @@ class AppViewModel : ViewModel() {
         }
     }
 
-    fun deleteTask(taskId: String) {
+    fun deleteTask(taskId: String?) {
+        if (taskId == null) {
+            _error.value = "Cannot delete a task with a null ID."
+            android.util.Log.e("AppViewModel", "deleteTask was called with a null taskId.")
+            return
+        }
         viewModelScope.launch {
             when (val result = repository.deleteTask(taskId)) {
                 is FirebaseResult.Error -> {

@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.channels.awaitClose
 import java.util.*
 
+
+
 class FirebaseRepository {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
@@ -122,7 +124,8 @@ class FirebaseRepository {
                 "createdAt" to taskWithUserId.createdAt,
                 "completedAt" to taskWithUserId.completedAt,
                 "userId" to taskWithUserId.userId,
-                "tags" to taskWithUserId.tags
+                "tags" to taskWithUserId.tags,
+                "dueDate" to taskWithUserId.dueDate
             )
 
             val docRef = firestore.collection("users")
@@ -291,19 +294,13 @@ class FirebaseRepository {
         }
     }
 
-    suspend fun setDeadline(taskId: String, deadline: Date?): FirebaseResult<Unit> {
+    suspend fun setDueDateMillis(taskId: String, dueDateMillis: Long?): FirebaseResult<Unit> {
         val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
 
-        val updates = if (deadline != null) {
-            mapOf(
-                "deadline" to deadline,
-                "lastUpdated" to Date()
-            )
+        val updates = if (dueDateMillis != null) {
+            mapOf("dueDate" to dueDateMillis, "lastUpdated" to Date())
         } else {
-            mapOf(
-                "deadline" to FieldValue.delete(),
-                "lastUpdated" to Date()
-            )
+            mapOf("dueDate" to FieldValue.delete(), "lastUpdated" to Date())
         }
 
         return try {
@@ -313,7 +310,6 @@ class FirebaseRepository {
                 .document(taskId)
                 .update(updates)
                 .await()
-
             FirebaseResult.Success(Unit)
         } catch (e: Exception) {
             FirebaseResult.Error(e)
@@ -425,24 +421,21 @@ class FirebaseRepository {
 
     fun observeUpcomingTasks(limit: Long = 20): Flow<FirebaseResult<List<FirebaseTask>>> {
         val userId = getCurrentUserId()
-        if (userId == null) {
-            return flowOf(FirebaseResult.Error(Exception("User not authenticated")))
-        }
+        if (userId == null) return flowOf(FirebaseResult.Error(Exception("User not authenticated")))
 
         return callbackFlow {
-            val now = Date()
-            val listener = firestore.collection("tasks")
-                .whereEqualTo("userId", userId)
+            val nowMillis = System.currentTimeMillis()
+            val listener = firestore.collection("users")
+                .document(userId)
+                .collection("tasks")
                 .whereEqualTo("isCompleted", false)
-                .whereGreaterThanOrEqualTo("deadline", now)
-                .orderBy("deadline", Query.Direction.ASCENDING)
+                .whereGreaterThanOrEqualTo("dueDate", nowMillis)   // ← use dueDate (Long)
+                .orderBy("dueDate", Query.Direction.ASCENDING)
                 .limit(limit)
                 .addSnapshotListener { snapshot, error ->
                     if (error != null) {
-                        trySend(FirebaseResult.Error(error))
-                        return@addSnapshotListener
+                        trySend(FirebaseResult.Error(error)); return@addSnapshotListener
                     }
-
                     if (snapshot != null) {
                         try {
                             val tasks = snapshot.documents.mapNotNull { doc ->

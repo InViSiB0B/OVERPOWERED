@@ -1,7 +1,6 @@
 package com.example.overpowered.data
 
 import com.google.firebase.firestore.ServerTimestamp
-import java.time.LocalDate
 import java.util.*
 
 // User profile data model for Firebase
@@ -30,17 +29,17 @@ data class UserProfile(
 
 // Task data model for Firebase
 data class FirebaseTask(
-    val id: String = "",
+    val id: String? = "",
     val title: String = "",
     val description: String? = null,
     val isCompleted: Boolean = false,
     val createdAt: Date? = null,
     val completedAt: Date? = null,
-    val userId: String = "",
+    val userId: String? = "",
     val experienceReward: Int = 10,
     val moneyReward: Int = 10,
     val tags: List<String> = emptyList(),
-    val deadline: Date? = null
+    val dueDate: Long? = null,
 )
 
 // Friend request data model

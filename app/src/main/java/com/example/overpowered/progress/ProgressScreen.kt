@@ -2,7 +2,6 @@ package com.example.overpowered.progress
 
 
 import com.example.overpowered.data.UserProfile
-import com.example.overpowered.data.FirebaseTask
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -34,6 +33,7 @@ import androidx.compose.ui.layout.ContentScale
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.overpowered.data.FirebaseTask
 
 // ---------- UI models  ----------
 data class PlayerStats(
@@ -52,7 +52,7 @@ data class Goal(
 )
 
 data class TaskHistoryItem(
-    val id: String,
+    val id: String?,
     val title: String,
     val date: LocalDate,
     val rewardExp: Int,

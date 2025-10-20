@@ -22,7 +22,7 @@ fun DateBadge(dueMillis: Long, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.primaryContainer,
+        color = MaterialTheme.colorScheme.secondary,
         tonalElevation = 2.dp,
         shadowElevation = 2.dp
     ) {
