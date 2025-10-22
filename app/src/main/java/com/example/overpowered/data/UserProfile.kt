@@ -65,6 +65,70 @@ data class Friendship(
     val createdAt: Date? = null
 )
 
+// LongTermGoal data model
+data class LongTermGoal(
+    val id: String = "",
+    val userId: String = "",
+    val name: String = "",
+    val description: String? = null,
+    val tags: List<String> = emptyList(),
+
+    // Goal size
+    val size: String = "SHORT", // "SHORT", "MEDIUM", "LONG"
+
+    // Progress tracking
+    val targetPoints: Int = 300,
+    val currentPoints: Int = 0,
+    val weeklyTargetPoints: Int = 75, // targetPoints / totalWeeks
+
+    // Weekly tracking
+    val weeklyProgress: Map<String, Int> = emptyMap(), // "week_0" -> points, "week_1" -> points
+    val currentWeek: Int = 0,
+    val totalWeeks: Int = 4,
+
+    // Task tracking
+    val completedTaskIds: List<String> = emptyList(),
+
+    // Metadata
+    @ServerTimestamp
+    val createdAt: Date? = null,
+    val completedAt: Date? = null,
+    val isCompleted: Boolean = false,
+
+    // Rewards
+    val rewardXP: Int = 100,
+    val rewardMoney: Int = 100,
+
+
+    @ServerTimestamp
+    val lastUpdated: Date? = null
+)
+
+// Helper object for goal size constraints
+object GoalSize {
+    const val SHORT = "SHORT"
+    const val MEDIUM = "MEDIUM"
+    const val LONG = "LONG"
+
+    data class GoalConfig(
+        val displayName: String,
+        val points: Int,
+        val weeks: Int,
+        val rewardXP: Int,
+        val rewardMoney: Int
+    )
+
+    fun getConfig(size: String): GoalConfig {
+        return when (size) {
+            SHORT -> GoalConfig("Short", 300, 4, 100, 100)
+            MEDIUM -> GoalConfig("Medium", 900, 13, 500, 500)
+            LONG -> GoalConfig("Long", 3600, 52, 2000, 2000)
+            else -> GoalConfig("Short", 300, 4, 100, 100)
+        }
+    }
+}
+
+
 // App state wrapper for easy syncing
 data class AppState(
     val profile: UserProfile = UserProfile(),

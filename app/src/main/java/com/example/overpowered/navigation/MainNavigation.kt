@@ -50,6 +50,7 @@ fun MainNavigation(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val tasks by viewModel.localTasks.collectAsState()
+    val longTermGoals by viewModel.longTermGoals.collectAsState()
     val pendingFriendRequests by viewModel.pendingFriendRequests.collectAsState()
 
     val isSelected = (tab == Tab.Today && !showProfile && !showEditProfile)

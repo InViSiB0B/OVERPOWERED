@@ -863,5 +863,214 @@ class FirebaseRepository {
             FirebaseResult.Error(e)
         }
     }
+
+    suspend fun createLongTermGoal(
+        name: String,
+        description: String?,
+        tags: List<String>,
+        size: String
+    ): FirebaseResult<String> {
+        val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
+
+        return try {
+            val config = GoalSize.getConfig(size)
+
+            val goal = LongTermGoal(
+                userId = userId,
+                name = name,
+                description = description,
+                tags = tags,
+                size = size,
+                targetPoints = config.points,
+                weeklyTargetPoints = config.points / config.weeks,
+                totalWeeks = config.weeks,
+                rewardXP = config.rewardXP,
+                rewardMoney = config.rewardMoney,
+                createdAt = Date()
+            )
+
+            val goalMap = mapOf(
+                "userId" to goal.userId,
+                "name" to goal.name,
+                "description" to goal.description,
+                "tags" to goal.tags,
+                "size" to goal.size,
+                "targetPoints" to goal.targetPoints,
+                "currentPoints" to goal.currentPoints,
+                "weeklyTargetPoints" to goal.weeklyTargetPoints,
+                "weeklyProgress" to goal.weeklyProgress,
+                "currentWeek" to goal.currentWeek,
+                "totalWeeks" to goal.totalWeeks,
+                "completedTaskIds" to goal.completedTaskIds,
+                "createdAt" to goal.createdAt,
+                "completedAt" to goal.completedAt,
+                "isCompleted" to goal.isCompleted,
+                "rewardXP" to goal.rewardXP,
+                "rewardMoney" to goal.rewardMoney
+            )
+
+            val docRef = firestore.collection("users")
+                .document(userId)
+                .collection("longTermGoals")
+                .add(goalMap)
+                .await()
+
+            FirebaseResult.Success(docRef.id)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
+    suspend fun updateLongTermGoal(goalId: String, updates: Map<String, Any>): FirebaseResult<Unit> {
+        val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
+
+        return try {
+            firestore.collection("users")
+                .document(userId)
+                .collection("longTermGoals")
+                .document(goalId)
+                .update(updates + ("lastUpdated" to Date()))
+                .await()
+
+            FirebaseResult.Success(Unit)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
+    suspend fun deleteLongTermGoal(goalId: String): FirebaseResult<Unit> {
+        val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
+
+        return try {
+            firestore.collection("users")
+                .document(userId)
+                .collection("longTermGoals")
+                .document(goalId)
+                .delete()
+                .await()
+
+            FirebaseResult.Success(Unit)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
+    // Observe all long-term goals for the current user
+    fun observeLongTermGoals(): Flow<FirebaseResult<List<LongTermGoal>>> {
+        val userId = getCurrentUserId()
+        if (userId == null) {
+            return flowOf(FirebaseResult.Error(Exception("User not authenticated")))
+        }
+
+        return callbackFlow {
+            val listener = firestore.collection("users")
+                .document(userId)
+                .collection("longTermGoals")
+                .whereEqualTo("isCompleted", false) // Only show active goals
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        trySend(FirebaseResult.Error(error))
+                        return@addSnapshotListener
+                    }
+
+                    if (snapshot != null) {
+                        try {
+                            val goals = snapshot.documents.mapNotNull { doc ->
+                                doc.toObject(LongTermGoal::class.java)?.copy(id = doc.id)
+                            }
+                            trySend(FirebaseResult.Success(goals))
+                        } catch (e: Exception) {
+                            trySend(FirebaseResult.Error(e))
+                        }
+                    }
+                }
+
+            awaitClose { listener.remove() }
+        }
+    }
+
+    // Update goal progress when a task is completed
+    suspend fun updateGoalProgressForTask(taskId: String, taskTags: List<String>, taskXP: Int): FirebaseResult<Unit> {
+        val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
+
+        return try {
+            // Get all active goals
+            val goalsSnapshot = firestore.collection("users")
+                .document(userId)
+                .collection("longTermGoals")
+                .whereEqualTo("isCompleted", false)
+                .get()
+                .await()
+
+            val goals = goalsSnapshot.documents.mapNotNull { doc ->
+                doc.toObject(LongTermGoal::class.java)?.copy(id = doc.id)
+            }
+
+            // Find goals with matching tags
+            val matchingGoals = goals.filter { goal ->
+                goal.tags.any { tag -> taskTags.contains(tag) }
+            }
+
+            // Update each matching goal
+            for (goal in matchingGoals) {
+                val currentWeek = calculateWeekNumber(goal.createdAt ?: Date(), Date())
+
+                // Don't add points if goal is already complete or we've exceeded total weeks
+                if (goal.currentPoints >= goal.targetPoints || currentWeek >= goal.totalWeeks) {
+                    continue
+                }
+
+                // Calculate points to add (cap at targetPoints)
+                val pointsToAdd = minOf(taskXP, goal.targetPoints - goal.currentPoints)
+                val newCurrentPoints = goal.currentPoints + pointsToAdd
+
+                // Update weekly progress
+                val weeklyProgress = goal.weeklyProgress.toMutableMap()
+                val weekKey = "week_$currentWeek"
+                weeklyProgress[weekKey] = (weeklyProgress[weekKey] ?: 0) + pointsToAdd
+
+                // Check if goal is now complete
+                val isCompleted = newCurrentPoints >= goal.targetPoints && currentWeek >= goal.totalWeeks
+
+                // Build updates map
+                val updates = mutableMapOf<String, Any>(
+                    "currentPoints" to newCurrentPoints,
+                    "weeklyProgress" to weeklyProgress,
+                    "currentWeek" to currentWeek,
+                    "completedTaskIds" to FieldValue.arrayUnion(taskId)
+                )
+
+                if (isCompleted) {
+                    updates["isCompleted"] = true
+                    updates["completedAt"] = Date()
+
+                    // Award completion rewards
+                    val profileResult = getUserProfile()
+                    if (profileResult is FirebaseResult.Success) {
+                        val profile = profileResult.data
+                        val updatedProfile = profile.copy(
+                            playerExperience = profile.playerExperience + goal.rewardXP,
+                            playerMoney = profile.playerMoney + goal.rewardMoney,
+                            playerLevel = ((profile.playerExperience + goal.rewardXP) / 100) + 1
+                        )
+                        saveUserProfile(updatedProfile)
+                    }
+                }
+
+                updateLongTermGoal(goal.id, updates)
+            }
+
+            FirebaseResult.Success(Unit)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
+    // Helper function to calculate which week we're in
+    private fun calculateWeekNumber(startDate: Date, currentDate: Date): Int {
+        val millisInWeek = 7L * 24 * 60 * 60 * 1000
+        val diffMillis = currentDate.time - startDate.time
+        return (diffMillis / millisInWeek).toInt()
+    }
 }
 

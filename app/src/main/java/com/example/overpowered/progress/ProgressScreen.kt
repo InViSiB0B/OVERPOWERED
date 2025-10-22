@@ -34,6 +34,15 @@ import coil.compose.rememberAsyncImagePainter
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.overpowered.data.FirebaseTask
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.ui.text.style.TextAlign
+import com.example.overpowered.data.GoalSize
+import com.example.overpowered.data.LongTermGoal
 
 // ---------- UI models  ----------
 data class PlayerStats(
@@ -86,6 +95,7 @@ fun ProgressScreen(
     val userProfile by viewModel.userProfile.collectAsState()
     val completedTasks by viewModel.completedTasks.collectAsState()
     val leaderboardEntries by viewModel.leaderboardEntries.collectAsState()
+    val longTermGoals by viewModel.longTermGoals.collectAsState()
     val isLoadingLeaderboard by viewModel.isLoadingLeaderboard.collectAsState()
 
     // Leaderboard controls
@@ -120,7 +130,17 @@ fun ProgressScreen(
         item {
             StatsSummaryCard(playerStats)
         }
-
+        item {
+            LongTermGoalsSection(
+                goals = longTermGoals,
+                onCreateGoal = { name, desc, tags, size ->
+                    viewModel.createLongTermGoal(name, desc, tags, size)
+                },
+                onDeleteGoal = { goalId ->
+                    viewModel.deleteLongTermGoal(goalId)
+                }
+            )
+        }
         // Leaderboard card
         item {
             LeaderboardCard(
@@ -600,3 +620,497 @@ fun LeaderboardEntryRow(
         }
     }
 }
+
+@Composable
+fun LongTermGoalsSection(
+    goals: List<LongTermGoal>,
+    onCreateGoal: (String, String?, List<String>, String) -> Unit,
+    onDeleteGoal: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var showCreateDialog by remember { mutableStateOf(false) }
+
+    Column(modifier = modifier) {
+        // Section Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Goals",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF4A5568)
+            )
+
+            IconButton(
+                onClick = { showCreateDialog = true },
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = Color(0xFF667EEA)
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = "Add Goal",
+                    tint = Color.White
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Goals List
+        if (goals.isEmpty()) {
+            EmptyGoalsState(onCreateClick = { showCreateDialog = true })
+        } else {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                goals.forEach { goal ->
+                    LongTermGoalCard(
+                        goal = goal,
+                        onDelete = { onDeleteGoal(goal.id) }
+                    )
+                }
+            }
+        }
+    }
+
+    // Create Goal Dialog
+    if (showCreateDialog) {
+        CreateGoalDialog(
+            onDismiss = { showCreateDialog = false },
+            onCreate = { name, desc, tags, size ->
+                onCreateGoal(name, desc, tags, size)
+                showCreateDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+fun EmptyGoalsState(onCreateClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "🎯",
+                fontSize = 48.sp
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "No Goals Yet",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF4A5568),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Create a goal and complete tasks with matching tags to track your progress!",
+                fontSize = 14.sp,
+                color = Color(0xFF718096),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onCreateClick,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF667EEA)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Create Your First Goal")
+            }
+        }
+    }
+}
+
+@Composable
+fun LongTermGoalCard(
+    goal: LongTermGoal,
+    onDelete: () -> Unit
+) {
+    val config = GoalSize.getConfig(goal.size)
+    val progress = goal.currentPoints.toFloat() / goal.targetPoints.toFloat()
+    val weeksElapsed = goal.currentWeek + 1
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Header with title and delete button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = goal.name,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF4A5568)
+                    )
+                    goal.description?.let {
+                        Text(
+                            text = it,
+                            fontSize = 14.sp,
+                            color = Color(0xFF718096),
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+
+                IconButton(
+                    onClick = onDelete,
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color(0xFFFED7D7),
+                        contentColor = Color(0xFFE53E3E)
+                    ),
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Delete Goal",
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+
+            // Tags
+            if (goal.tags.isNotEmpty()) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                ) {
+                    goal.tags.forEach { tag ->
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFF667EEA).copy(alpha = 0.1f)
+                        ) {
+                            Text(
+                                text = tag,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF667EEA)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Progress Bar
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "${goal.currentPoints} / ${goal.targetPoints} points",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF4A5568)
+                    )
+                    Text(
+                        text = "${(progress * 100).toInt()}%",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF667EEA)
+                    )
+                }
+
+                LinearProgressIndicator(
+                    progress = progress,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp)
+                        .clip(RoundedCornerShape(6.dp)),
+                    color = Color(0xFF667EEA),
+                    trackColor = Color(0xFFE2E8F0)
+                )
+            }
+
+            // Stats Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = "${config.displayName} Goal",
+                        fontSize = 12.sp,
+                        color = Color(0xFF718096)
+                    )
+                    Text(
+                        text = "$weeksElapsed / ${goal.totalWeeks} weeks",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF4A5568)
+                    )
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Rewards",
+                        fontSize = 12.sp,
+                        color = Color(0xFF718096)
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "+${goal.rewardXP} XP",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFFED8936)
+                        )
+                        Text(
+                            text = "+$${goal.rewardMoney}",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF48BB78)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CreateGoalDialog(
+    onDismiss: () -> Unit,
+    onCreate: (name: String, description: String?, tags: List<String>, size: String) -> Unit
+) {
+    var goalName by remember { mutableStateOf("") }
+    var goalDescription by remember { mutableStateOf("") }
+    var goalTags by remember { mutableStateOf("") }
+    var selectedSize by remember { mutableStateOf(GoalSize.SHORT) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        shape = RoundedCornerShape(20.dp),
+        title = {
+            Column {
+                Text(
+                    text = "Create Goal",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF4A5568)
+                )
+                Text(
+                    text = "Track progress by completing tasks with matching tags",
+                    fontSize = 14.sp,
+                    color = Color(0xFF718096),
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Goal Name
+                OutlinedTextField(
+                    value = goalName,
+                    onValueChange = { goalName = it },
+                    label = { Text("Goal Name") },
+                    placeholder = { Text("e.g., Get better at guitar") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF667EEA),
+                        unfocusedBorderColor = Color(0xFFE2E8F0)
+                    )
+                )
+
+                // Goal Description
+                OutlinedTextField(
+                    value = goalDescription,
+                    onValueChange = { goalDescription = it },
+                    label = { Text("Description (Optional)") },
+                    placeholder = { Text("What are you working towards?") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    maxLines = 3,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF667EEA),
+                        unfocusedBorderColor = Color(0xFFE2E8F0)
+                    )
+                )
+
+                // Tags
+                OutlinedTextField(
+                    value = goalTags,
+                    onValueChange = { goalTags = it },
+                    label = { Text("Related Tags") },
+                    placeholder = { Text("guitar, music, practice") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    supportingText = {
+                        Text(
+                            "Tasks with these tags will count toward this goal",
+                            fontSize = 12.sp,
+                            color = Color(0xFF718096)
+                        )
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF667EEA),
+                        unfocusedBorderColor = Color(0xFFE2E8F0)
+                    )
+                )
+
+                // Goal Size Selection
+                Column {
+                    Text(
+                        text = "Goal Duration",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF4A5568),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        GoalSizeOption(
+                            size = GoalSize.SHORT,
+                            isSelected = selectedSize == GoalSize.SHORT,
+                            onClick = { selectedSize = GoalSize.SHORT }
+                        )
+                        GoalSizeOption(
+                            size = GoalSize.MEDIUM,
+                            isSelected = selectedSize == GoalSize.MEDIUM,
+                            onClick = { selectedSize = GoalSize.MEDIUM }
+                        )
+                        GoalSizeOption(
+                            size = GoalSize.LONG,
+                            isSelected = selectedSize == GoalSize.LONG,
+                            onClick = { selectedSize = GoalSize.LONG }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (goalName.isNotBlank() && goalTags.isNotBlank()) {
+                        val tags = goalTags.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                        onCreate(
+                            goalName,
+                            goalDescription.takeIf { it.isNotBlank() },
+                            tags,
+                            selectedSize
+                        )
+                    }
+                },
+                enabled = goalName.isNotBlank() && goalTags.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF667EEA)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Create Goal")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = Color(0xFF718096)
+                )
+            ) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun GoalSizeOption(
+    size: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val config = GoalSize.getConfig(size)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) Color(0xFF667EEA).copy(alpha = 0.1f) else Color(0xFFF7FAFC)
+        ),
+        border = if (isSelected) BorderStroke(2.dp, Color(0xFF667EEA)) else null
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = config.displayName,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isSelected) Color(0xFF667EEA) else Color(0xFF4A5568)
+                )
+                Text(
+                    text = "${config.weeks} weeks • ${config.points} points",
+                    fontSize = 14.sp,
+                    color = Color(0xFF718096),
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+                Text(
+                    text = "Rewards: ${config.rewardXP} XP, $${config.rewardMoney}",
+                    fontSize = 12.sp,
+                    color = Color(0xFF718096),
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+
+            RadioButton(
+                selected = isSelected,
+                onClick = onClick,
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = Color(0xFF667EEA)
+                )
+            )
+        }
+    }
+}
+
