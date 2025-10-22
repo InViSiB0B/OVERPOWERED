@@ -41,6 +41,10 @@ class AppViewModel : ViewModel() {
     private val _friends = MutableStateFlow<List<Friendship>>(emptyList())
     val friends: StateFlow<List<Friendship>> = _friends.asStateFlow()
 
+    // Long Term Goals State
+    private val _longTermGoals = MutableStateFlow<List<LongTermGoal>>(emptyList())
+    val longTermGoals: StateFlow<List<LongTermGoal>> = _longTermGoals.asStateFlow()
+
     // Leaderboard state
     private val _leaderboardEntries = MutableStateFlow<List<LeaderboardEntry>>(emptyList())
     val leaderboardEntries: StateFlow<List<LeaderboardEntry>> = _leaderboardEntries.asStateFlow()
@@ -166,6 +170,20 @@ class AppViewModel : ViewModel() {
             }
         }
 
+        // Observe long term goals
+        repository.observeLongTermGoals().onEach { result ->
+            when (result) {
+                is FirebaseResult.Success -> {
+                    _longTermGoals.value = result.data
+                    android.util.Log.d("AppViewModel", "Long-term goals updated: ${result.data.size}")
+                }
+                is FirebaseResult.Error -> {
+                    android.util.Log.e("AppViewModel", "Error observing long-term goals: ${result.exception.message}")
+                }
+                else -> {}
+            }
+        }.launchIn(viewModelScope)
+
         // Observe friends list
         viewModelScope.launch {
             repository.observeFriends().collect { result ->
@@ -285,8 +303,11 @@ class AppViewModel : ViewModel() {
             android.util.Log.d("AppViewModel", "Completing task: $taskId")
 
             // Complete the task in Firebase - this will update EVERYTHING including weekly counter
-            val result = repository.completeTask(taskId, experienceReward, moneyReward)
-            android.util.Log.d("AppViewModel", "Task completion result: $result")
+            val task = _tasks.value.find { it.id == taskId }
+            if (task != null && task.tags.isNotEmpty()) {
+                android.util.Log.d("AppViewModel", "Updating goal progress for task with tags: ${task.tags}")
+                repository.updateGoalProgressForTask(taskId, task.tags, experienceReward)
+            }
 
             // Manually refresh the profile to get updated stats
             kotlinx.coroutines.delay(300) // Small delay to ensure Firebase writes complete
@@ -429,6 +450,40 @@ class AppViewModel : ViewModel() {
     fun ignoreFriendRequest(requestId: String) {
         viewModelScope.launch {
             repository.ignoreFriendRequest(requestId)
+        }
+    }
+
+    // Long term goal operations
+    fun createLongTermGoal(
+        name: String,
+        description: String?,
+        tags: List<String>,
+        size: String
+    ) {
+        viewModelScope.launch {
+            when (val result = repository.createLongTermGoal(name, description, tags, size)) {
+                is FirebaseResult.Success -> {
+                    android.util.Log.d("AppViewModel", "Long-term goal created successfully")
+                }
+                is FirebaseResult.Error -> {
+                    android.util.Log.e("AppViewModel", "Failed to create long-term goal: ${result.exception.message}")
+                }
+                else -> {}
+            }
+        }
+    }
+
+    fun deleteLongTermGoal(goalId: String) {
+        viewModelScope.launch {
+            when (val result = repository.deleteLongTermGoal(goalId)) {
+                is FirebaseResult.Success -> {
+                    android.util.Log.d("AppViewModel", "Long-term goal deleted successfully")
+                }
+                is FirebaseResult.Error -> {
+                    android.util.Log.e("AppViewModel", "Failed to delete long-term goal: ${result.exception.message}")
+                }
+                else -> {}
+            }
         }
     }
 
