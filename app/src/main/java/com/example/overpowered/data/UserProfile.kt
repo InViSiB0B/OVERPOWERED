@@ -72,24 +72,39 @@ data class LongTermGoal(
     val name: String = "",
     val description: String? = null,
     val tags: List<String> = emptyList(),
-    val size: String = "SHORT",
+
+    // Goal size
+    val size: String = "SHORT", // "SHORT", "MEDIUM", "LONG"
+
+    // Progress tracking
     val targetPoints: Int = 300,
     val currentPoints: Int = 0,
-    val weeklyTargetPoints: Int = 75,
-    val weeklyProgress: Map<String, Int> = emptyMap(),
+    val weeklyTargetPoints: Int = 75, // targetPoints / totalWeeks
+
+    // Weekly tracking
+    val weeklyProgress: Map<String, Int> = emptyMap(), // "week_0" -> points, "week_1" -> points
     val currentWeek: Int = 0,
     val totalWeeks: Int = 4,
+
+    // Task tracking
     val completedTaskIds: List<String> = emptyList(),
+
+    // Metadata
     @ServerTimestamp
     val createdAt: Date? = null,
     val completedAt: Date? = null,
     val isCompleted: Boolean = false,
+
+    // Rewards
     val rewardXP: Int = 100,
     val rewardMoney: Int = 100,
+
+
     @ServerTimestamp
     val lastUpdated: Date? = null
 )
 
+// Helper object for goal size constraints
 object GoalSize {
     const val SHORT = "SHORT"
     const val MEDIUM = "MEDIUM"

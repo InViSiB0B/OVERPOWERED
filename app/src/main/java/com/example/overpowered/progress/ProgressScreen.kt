@@ -638,7 +638,7 @@ fun LongTermGoalsSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Long Term Goals",
+                text = "Goals",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF4A5568)
@@ -708,7 +708,7 @@ fun EmptyGoalsState(onCreateClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "No Long Term Goals Yet",
+                text = "No Goals Yet",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF4A5568),
@@ -922,7 +922,7 @@ fun CreateGoalDialog(
         title = {
             Column {
                 Text(
-                    text = "Create Long Term Goal",
+                    text = "Create Goal",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF4A5568)
