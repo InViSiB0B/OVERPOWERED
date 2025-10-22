@@ -579,7 +579,7 @@ fun LeaderboardEntryRow(
 
 // ---------- Lightweight placeholders (commented as non-basic) ----------
 @Composable private fun LoadingStatsCard() {
-    // Non-basic: skeleton shimmer is nicer; this is a minimal placeholder
+    // Non-basic: skeleton shimmer is nicer; this is a minimal placeholders
     Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC))) {
         Column(Modifier.padding(16.dp)) {
             Text("Progress Overview", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
