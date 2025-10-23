@@ -319,7 +319,7 @@ class AppViewModel : ViewModel() {
                 }
             }
 
-            // Manually refresh the profile to get updated stats
+            // Manually refresh the profile to get updated statss
             kotlinx.coroutines.delay(300) // Small delay to ensure Firebase writes complete
             when (val profileResult = repository.getUserProfile()) {
                 is FirebaseResult.Success -> {
