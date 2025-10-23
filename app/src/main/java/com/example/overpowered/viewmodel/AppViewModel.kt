@@ -302,19 +302,21 @@ class AppViewModel : ViewModel() {
         viewModelScope.launch {
             android.util.Log.d("AppViewModel", "Completing task: $taskId")
 
-            // Complete the task in Firebase - this will update EVERYTHING including weekly counter
+            // Get the task and its tags BEFORE marking it complete
+            val task = _tasks.value.find { it.id == taskId }
+            val taskTags = task?.tags ?: emptyList()
+
+            // Complete the task in Firebase
             val result = repository.completeTask(taskId, experienceReward, moneyReward)
             android.util.Log.d("AppViewModel", "Task completion result: $result")
 
             // Update long-term goal progress for matching goals
-            try {
-                val task = _tasks.value.find { it.id == taskId }
-                if (task != null && task.tags.isNotEmpty()) {
-                    android.util.Log.d("AppViewModel", "Updating goal progress for task with tags: ${task.tags}")
-                    repository.updateGoalProgressForTask(taskId, task.tags, experienceReward)
+            if (taskTags.isNotEmpty()) {
+                try {
+                    repository.updateGoalProgressForTask(taskId, taskTags, experienceReward)
+                } catch (e: Exception) {
+                    android.util.Log.e("AppViewModel", "Error updating goal progress: ${e.message}", e)
                 }
-            } catch (e: Exception) {
-                android.util.Log.e("AppViewModel", "Error updating goal progress: ${e.message}", e)
             }
 
             // Manually refresh the profile to get updated stats
