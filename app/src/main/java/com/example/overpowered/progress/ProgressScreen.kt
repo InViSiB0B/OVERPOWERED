@@ -39,10 +39,13 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import com.example.overpowered.data.GoalSize
 import com.example.overpowered.data.LongTermGoal
+import com.example.overpowered.progress.components.StreakCalculator
 
 // ---------- UI models  ----------
 data class PlayerStats(
@@ -119,6 +122,10 @@ fun ProgressScreen(
     val playerStats: PlayerStats = userProfile.toPlayerStatsForProgress()
     val taskHistoryItems: List<TaskHistoryItem> = completedTasks.map { it.toHistoryItem() }
 
+    val dailyStreak = remember(taskHistoryItems) {
+        StreakCalculator.computeDailyStreak(taskHistoryItems)
+    }
+
     // ---------- UI ----------
     LazyColumn(
         modifier = Modifier
@@ -128,7 +135,7 @@ fun ProgressScreen(
     ) {
         // Stats card
         item {
-            StatsSummaryCard(playerStats)
+            StatsSummaryCard(stats = playerStats, dailyStreak = dailyStreak)
         }
         item {
             LongTermGoalsSection(
@@ -192,7 +199,7 @@ private fun FirebaseTask.toHistoryItem(): TaskHistoryItem {
 
 // ---------- Cards ----------
 @Composable
-fun StatsSummaryCard(stats: PlayerStats) {
+fun StatsSummaryCard(stats: PlayerStats, dailyStreak: Int) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -200,10 +207,17 @@ fun StatsSummaryCard(stats: PlayerStats) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Progress Overview", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 StatPill(Icons.Filled.PlayArrow, "EXP",  stats.exp.toString(),  Color(0xFF667EEA))
                 StatPill(Icons.Filled.Star,      "LVL",  stats.level.toString(), Color(0xFF38B2AC))
                 StatPill(Icons.Filled.ShoppingCart, "Gold", stats.gold.toString(), Color(0xFFF6AD55))
+                StatPill(Icons.Filled.Check,      "Streak", dailyStreak.toString(), Color(0xFFED64A6))
             }
 
             val progress = (stats.exp.toFloat() / stats.expForNextLevel.toFloat()).coerceIn(0f, 1f)
@@ -231,16 +245,37 @@ private fun StatPill(
     value: String,
     tint: Color
 ) {
-    Surface(color = Color.White, tonalElevation = 2.dp, shadowElevation = 2.dp, shape = MaterialTheme.shapes.medium) {
+    Surface(
+        color = Color.White,
+        tonalElevation = 2.dp,
+        shadowElevation = 2.dp,
+        shape = MaterialTheme.shapes.medium
+    ) {
         Row(
-            modifier = Modifier.widthIn(min = 96.dp).padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier
+                .wrapContentWidth() // ← was width(96.dp); let it size naturally
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Icon(icon, contentDescription = label, tint = tint)
             Column {
-                Text(label, style = MaterialTheme.typography.labelMedium, color = Color(0xFF718096))
-                Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color(0xFF718096),
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    value,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Clip
+                )
             }
         }
     }
