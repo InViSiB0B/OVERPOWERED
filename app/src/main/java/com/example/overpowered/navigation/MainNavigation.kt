@@ -216,7 +216,7 @@ fun MainNavigation(
                             viewModel.addTask(title, description, tags, dueDate, isRecurring, recurrenceType)
                         },
                         onCompleteTask = { task ->
-                            // Find the Firebase task IDs
+                            // Find the Firebase task IDss
                             val firebaseTask = viewModel.findFirebaseTaskById(task.id)
                             firebaseTask?.let {
                                 viewModel.completeTask(
