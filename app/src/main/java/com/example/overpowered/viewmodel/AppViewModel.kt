@@ -67,7 +67,10 @@ class AppViewModel : ViewModel() {
         title = this.title,
         description = this.description,
         tags = this.tags,
-        dueDate = this.dueDate
+        dueDate = this.dueDate,
+        isRecurring = this.isRecurring,
+        recurrenceType = this.recurrenceType,
+        recurrenceParentId = this.recurrenceParentId
     )
 
     fun Task.toFirebaseTask(): FirebaseTask = FirebaseTask(
@@ -274,14 +277,19 @@ class AppViewModel : ViewModel() {
         title: String,
         description: String? = null,
         tags: List<String> = emptyList(),
-        dueDate: Long?
+        dueDate: Long?,
+        isRecurring: Boolean = false,
+        recurrenceType: String? = null
     ) {
         viewModelScope.launch {
             val task = FirebaseTask(
                 title = title,
                 description = description,
                 tags = tags,
-                dueDate = dueDate
+                dueDate = dueDate,
+                isRecurring = isRecurring,
+                recurrenceType = recurrenceType,
+                recurrenceParentId = null
             )
 
             when (val result = repository.addTask(task)) {
@@ -351,6 +359,40 @@ class AppViewModel : ViewModel() {
             }
         }
     }
+
+    // Delete a single instance
+    fun deleteSingleRecurringOccurrence(taskId: String?) {
+        if (taskId == null) {
+            _error.value = "Cannot delete a task with a null ID."
+            android.util.Log.e("AppViewModel", "deleteSingleRecurringOccurrence was called with a null taskId.")
+            return
+        }
+        viewModelScope.launch {
+            when (val result = repository.deleteSingleRecurringOccurrence(taskId)) {
+                is FirebaseResult.Error -> {
+                    _error.value = "Failed to delete task: ${result.exception.message}"
+                }
+                else -> {
+                    android.util.Log.d("AppViewModel", "Successfully deleted single occurrence and created next")
+                }
+            }
+        }
+    }
+
+    // Delete all Recurring Instances
+    fun deleteAllRecurringInstances(recurrenceParentId: String) {
+        viewModelScope.launch {
+            when (val result = repository.deleteAllRecurringInstances(recurrenceParentId)) {
+                is FirebaseResult.Error -> {
+                    _error.value = "Failed to delete recurring tasks: ${result.exception.message}"
+                }
+                else -> {
+                    android.util.Log.d("AppViewModel", "Successfully deleted all recurring instances")
+                }
+            }
+        }
+    }
+
     // Tag operations
     fun addTagToTask(taskId: String, tag: String) {
         viewModelScope.launch {

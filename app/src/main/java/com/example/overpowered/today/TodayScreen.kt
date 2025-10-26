@@ -13,7 +13,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.overpowered.data.RecurrenceType
 import com.example.overpowered.today.Task
+import com.example.overpowered.today.components.RecurringTaskDeleteDialog
 import com.example.overpowered.today.components.RewardDialog
 import com.example.overpowered.today.components.TaskInputCard
 import com.example.overpowered.today.components.TaskList
@@ -23,9 +25,11 @@ import com.example.overpowered.today.components.formatDate
 @Composable
 fun TodayScreen(
     tasks: List<Task> = emptyList(),
-    onAddTask: (String, String?, List<String>, Long?) -> Unit = { _, _, _, _ -> },
+    onAddTask: (String, String?, List<String>, Long?, Boolean, String?) -> Unit = { _, _, _, _, _, _ -> },
     onCompleteTask: (Task) -> Unit = { _ -> },
-    onDeleteTask: (Task) -> Unit = { _ -> }
+    onDeleteTask: (Task) -> Unit = { _ -> },
+    onDeleteSingleRecurring: (Task) -> Unit = { _ -> },
+    onDeleteAllRecurring: (String) -> Unit = { _ -> }
 ) {
     // Local UI state
     var isTaskInputVisible by remember { mutableStateOf(false) }
@@ -33,7 +37,10 @@ fun TodayScreen(
     var taskDescription by remember { mutableStateOf("") }
     var taskTags by remember { mutableStateOf("") }
     var dueDate by remember { mutableStateOf<Long?>(null) }
-
+    var isRecurring by remember { mutableStateOf(false) }
+    var recurrenceType: RecurrenceType? by remember { mutableStateOf(null) }
+    var taskToDelete by remember { mutableStateOf<Task?>(null) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     var showRewardDialog by remember { mutableStateOf(false) }
     var completedTaskTitle by remember { mutableStateOf("") }
 
@@ -97,16 +104,30 @@ fun TodayScreen(
                         onTagsChange = { taskTags = it },
                         dueDate = dueDate,
                         onDueDateChange = { dueDate = it },
+                        isRecurring = isRecurring,
+                        onRecurringChange = { isRecurring = it },
+                        recurrenceType = recurrenceType,
+                        onRecurrenceTypeChange = { recurrenceType = it },
                         onSubmit = {
                             if (taskTitle.isNotBlank()) {
                                 val tags = taskTags.split(",").map { it.trim() }.filter { it.isNotBlank() }
-                                onAddTask(taskTitle, taskDescription.takeIf { it.isNotBlank() }, tags, dueDate)
+
+                                onAddTask(
+                                    taskTitle,
+                                    taskDescription.takeIf { it.isNotBlank() },
+                                    tags,
+                                    dueDate,
+                                    isRecurring,
+                                    recurrenceType?.value
+                                )
 
                                 // reset
                                 taskTitle = ""
                                 taskDescription = ""
                                 taskTags = ""
                                 dueDate = null
+                                isRecurring = false
+                                recurrenceType = null
                                 isTaskInputVisible = false
                             }
                         }
@@ -137,7 +158,16 @@ fun TodayScreen(
                     onCompleteTask(task)
                     showRewardDialog = true
                 },
-                onDelete = onDeleteTask
+                onDelete = { task ->
+                    if (task.isRecurring) {
+                        // Show dialog for recurring task
+                        taskToDelete = task
+                        showDeleteDialog = true
+                    } else {
+                        // Delete immediately for non-recurring
+                        onDeleteTask(task)
+                    }
+                }
             )
         }
     }
@@ -148,6 +178,29 @@ fun TodayScreen(
             experienceReward = 10,
             moneyReward = 10,
             onDismiss = { showRewardDialog = false }
+        )
+    }
+
+    // Delete confirmation dialog for recurring tasks
+    if (showDeleteDialog && taskToDelete != null) {
+        RecurringTaskDeleteDialog(
+            taskTitle = taskToDelete!!.title,
+            onDeleteThis = {
+                onDeleteSingleRecurring(taskToDelete!!)
+                showDeleteDialog = false
+                taskToDelete = null
+            },
+            onDeleteAll = {
+                taskToDelete!!.recurrenceParentId?.let { parentId ->
+                    onDeleteAllRecurring(parentId)
+                }
+                showDeleteDialog = false
+                taskToDelete = null
+            },
+            onDismiss = {
+                showDeleteDialog = false
+                taskToDelete = null
+            }
         )
     }
 }
