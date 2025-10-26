@@ -1,7 +1,21 @@
 package com.example.overpowered.data
 
+import com.google.firebase.firestore.PropertyName
 import com.google.firebase.firestore.ServerTimestamp
 import java.util.*
+
+enum class RecurrenceType(val displayName: String, val value: String) {
+    DAILY("Daily", "DAILY"),
+    WEEKLY("Weekly", "WEEKLY"),
+    MONTHLY("Monthly", "MONTHLY"),
+    YEARLY("Yearly", "YEARLY");
+
+    companion object {
+        fun fromValue(value: String?): RecurrenceType? {
+            return values().find { it.value == value }
+        }
+    }
+}
 
 // User profile data model for Firebase
 data class UserProfile(
@@ -40,7 +54,13 @@ data class FirebaseTask(
     val moneyReward: Int = 10,
     val tags: List<String> = emptyList(),
     val dueDate: Long? = null,
+
+    @get:PropertyName("isRecurring") @set:PropertyName("isRecurring")
+    var isRecurring: Boolean = false,
+    val recurrenceType: String? = null, // "DAILY", "WEEKLY", "MONTHLY", "YEARLY"
+    val recurrenceParentId: String? = null, // Links all instances of a recurring task
 )
+
 
 // Friend request data model
 data class FriendRequest(

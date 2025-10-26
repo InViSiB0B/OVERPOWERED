@@ -12,7 +12,15 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Alignment
 import java.util.*
+import com.example.overpowered.data.RecurrenceType
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,11 +34,19 @@ fun TaskInputCard(
     onTagsChange: (String) -> Unit,
     dueDate: Long?,
     onDueDateChange: (Long?) -> Unit,
+    isRecurring: Boolean,
+    onRecurringChange: (Boolean) -> Unit,
+    recurrenceType: RecurrenceType?,
+    onRecurrenceTypeChange: (RecurrenceType?) -> Unit,
+
     onSubmit: () -> Unit
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
 
-    Column(Modifier.padding(top = 32.dp)) {
+    Column(Modifier
+        .padding(top = 32.dp)
+        .verticalScroll(rememberScrollState())
+    ){
         OutlinedTextField(
             value = title,
             onValueChange = onTitleChange,
@@ -38,12 +54,12 @@ fun TaskInputCard(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-            focusedLabelColor = MaterialTheme.colorScheme.primary,
-            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            cursorColor = MaterialTheme.colorScheme.primary
-        )
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                cursorColor = MaterialTheme.colorScheme.primary
+            )
         )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
@@ -64,22 +80,68 @@ fun TaskInputCard(
         )
         Spacer(Modifier.height(12.dp))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-            DateSelectorButton(
-                dueDate = dueDate,
-                onClick = { showDatePicker = true }
-            )
+        // Date selector
+        DateSelectorButton(
+            dueDate = dueDate,
+            onClick = { showDatePicker = true }
+        )
 
-            Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(12.dp))
 
-            Button(
-                onClick = onSubmit,
-                enabled = title.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+        // Recurrence checkbox
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = isRecurring,
+                onCheckedChange = { checked ->
+                    onRecurringChange(checked)
+                    if (!checked) {
+                        onRecurrenceTypeChange(null)
+                    }
+                },
+                colors = CheckboxDefaults.colors(
+                    checkedColor = MaterialTheme.colorScheme.primary
                 )
-            ) { Text("Add Task") }
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Repeating Task",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // Show recurrence type selector if recurring is checked
+        AnimatedVisibility(
+            visible = isRecurring,
+            enter = expandVertically(animationSpec = tween(300)),
+            exit = shrinkVertically(animationSpec = tween(300))
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Spacer(Modifier.height(8.dp))
+                RecurrenceTypeSelector(
+                    selectedType = recurrenceType,
+                    onTypeSelected = onRecurrenceTypeChange
+                )
+                Spacer(Modifier.height(12.dp))
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Submit button
+        Button(
+            onClick = onSubmit,
+            enabled = title.isNotBlank() && (!isRecurring || recurrenceType != null),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Add Task")
         }
     }
 
@@ -108,7 +170,7 @@ fun TaskInputCard(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { picked ->
                             val normalized = normalizePickerMillisToLocalMidnight(picked)
-                            onDueDateChange(normalized)   // save local-midnight millis
+                            onDueDateChange(normalized)
                         }
                         showDatePicker = false
                     },
@@ -118,6 +180,81 @@ fun TaskInputCard(
             dismissButton = { TextButton({ showDatePicker = false }) { Text("Cancel") } }
         ) {
             DatePicker(state = datePickerState)
+        }
+    }
+}
+
+@Composable
+fun RecurrenceTypeSelector(
+    selectedType: RecurrenceType?,
+    onTypeSelected: (RecurrenceType) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "Repeat:",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        // First row: Daily and Weekly
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = selectedType == RecurrenceType.DAILY,
+                onClick = { onTypeSelected(RecurrenceType.DAILY) },
+                label = { Text("Daily") },
+                modifier = Modifier.weight(1f),
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
+
+            FilterChip(
+                selected = selectedType == RecurrenceType.WEEKLY,
+                onClick = { onTypeSelected(RecurrenceType.WEEKLY) },
+                label = { Text("Weekly") },
+                modifier = Modifier.weight(1f),
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
+        }
+
+        // Second row: Monthly and Yearly
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = selectedType == RecurrenceType.MONTHLY,
+                onClick = { onTypeSelected(RecurrenceType.MONTHLY) },
+                label = { Text("Monthly") },
+                modifier = Modifier.weight(1f),
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
+
+            FilterChip(
+                selected = selectedType == RecurrenceType.YEARLY,
+                onClick = { onTypeSelected(RecurrenceType.YEARLY) },
+                label = { Text("Yearly") },
+                modifier = Modifier.weight(1f),
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
         }
     }
 }

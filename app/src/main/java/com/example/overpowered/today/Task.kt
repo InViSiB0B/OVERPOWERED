@@ -5,5 +5,8 @@ data class Task(
     val title: String,
     val description: String? = null,
     val dueDate: Long? = null,
-    val tags: List<String> = emptyList()
+    val tags: List<String> = emptyList(),
+    val isRecurring: Boolean = false,
+    val recurrenceType: String? = null,
+    val recurrenceParentId: String? = null
 )

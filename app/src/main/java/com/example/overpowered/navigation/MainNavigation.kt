@@ -212,8 +212,8 @@ fun MainNavigation(
                 when (tab) {
                     Tab.Today -> TodayScreen(
                         tasks = tasks,
-                        onAddTask = { title, description, tags, dueDate ->
-                            viewModel.addTask(title, description, tags, dueDate)
+                        onAddTask = { title, description, tags, dueDate, isRecurring, recurrenceType ->
+                            viewModel.addTask(title, description, tags, dueDate, isRecurring, recurrenceType)
                         },
                         onCompleteTask = { task ->
                             // Find the Firebase task IDs
@@ -231,6 +231,15 @@ fun MainNavigation(
                             firebaseTask?.let {
                                 viewModel.deleteTask(it.id)
                             }
+                        },
+                        onDeleteSingleRecurring = { task ->
+                            val firebaseTask = viewModel.findFirebaseTaskById(task.id)
+                            firebaseTask?.let {
+                                viewModel.deleteSingleRecurringOccurrence(it.id)
+                            }
+                        },
+                        onDeleteAllRecurring = { recurrenceParentId ->
+                            viewModel.deleteAllRecurringInstances(recurrenceParentId)
                         }
                     )
                     Tab.Progress -> ProgressScreen(viewModel = viewModel)
