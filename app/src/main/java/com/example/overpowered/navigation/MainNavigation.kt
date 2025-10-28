@@ -26,6 +26,11 @@ import coil.compose.rememberAsyncImagePainter
 import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.contentColorFor
 import androidx.compose.ui.zIndex
+import androidx.compose.foundation.background
+import androidx.compose.ui.text.style.TextAlign
+import com.example.overpowered.auth.PhoneAuthScreen
+import com.example.overpowered.auth.VerificationCodeScreen
+import com.example.overpowered.viewmodel.PhoneAuthState
 import com.example.overpowered.onboarding.OnboardingScreen
 import com.example.overpowered.profile.ProfileScreen
 import com.example.overpowered.profile.components.EditProfileScreen
@@ -40,7 +45,161 @@ enum class Tab { Today, Progress, Shop }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainNavigation(
+fun MainNavigation() {
+    val viewModel: AppViewModel = viewModel()
+
+    val phoneAuthState by viewModel.phoneAuthState.collectAsState()
+    val isOnboarded by viewModel.isOnboarded.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val activity = context as? android.app.Activity
+
+    var savedPhoneNumber by remember { mutableStateOf("") }
+
+    // Handle different authentication states
+    when (phoneAuthState) {
+        is PhoneAuthState.Initial, is PhoneAuthState.SendingCode -> {
+            if (!isLoading) {
+                PhoneAuthScreen(
+                    onVerificationCodeSent = { _, phoneNumber ->
+                        savedPhoneNumber = phoneNumber
+                        activity?.let { viewModel.startPhoneAuth(phoneNumber, it) }
+                    },
+                    onError = { message ->
+                        // Show error snackbar or toast
+                    }
+                )
+            } else {
+                LoadingScreen()
+            }
+        }
+
+        is PhoneAuthState.CodeSent -> {
+            val state = phoneAuthState as PhoneAuthState.CodeSent
+            savedPhoneNumber = state.phoneNumber
+            VerificationCodeScreen(
+                phoneNumber = state.phoneNumber,
+                verificationId = state.verificationId,
+                onVerificationComplete = { code ->
+                    viewModel.verifyPhoneCode(state.verificationId, code, state.phoneNumber)
+                },
+                onResendCode = {
+                    activity?.let { viewModel.startPhoneAuth(state.phoneNumber, it) }
+                },
+                onError = { message ->
+                    // Show error
+                }
+            )
+        }
+
+        is PhoneAuthState.VerifyingCode -> {
+            LoadingScreen(message = "Verifying code...")
+        }
+
+        is PhoneAuthState.Success -> {
+            // After successful auth, check onboarding
+            if (!isOnboarded && !isLoading) {
+                OnboardingScreen(
+                    onComplete = { username ->
+                        viewModel.completeOnboarding(
+                            username = username,
+                            phoneNumber = savedPhoneNumber
+                        )
+                    }
+                )
+            } else if (isOnboarded) {
+                // Show main app
+                MainAppContent(viewModel = viewModel)
+            } else {
+                LoadingScreen()
+            }
+        }
+
+        is PhoneAuthState.Error -> {
+            val errorMessage = (phoneAuthState as PhoneAuthState.Error).message
+            // Show error screen with retry option
+            ErrorScreen(
+                message = errorMessage,
+                onRetry = {
+                    viewModel.resetPhoneAuthState()
+                }
+            )
+        }
+    }
+}
+
+// Loading screen composable
+@Composable
+private fun LoadingScreen(message: String = "Loading...") {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF7FAFC)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            CircularProgressIndicator(color = Color(0xFF667EEA))
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = message,
+                color = Color(0xFF4A5568),
+                fontSize = 16.sp
+            )
+        }
+    }
+}
+
+// Error screen composable
+@Composable
+private fun ErrorScreen(message: String, onRetry: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF7FAFC))
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "⚠️",
+                fontSize = 72.sp
+            )
+            Text(
+                text = "Something went wrong",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF4A5568),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = message,
+                fontSize = 16.sp,
+                color = Color(0xFF718096),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onRetry,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF667EEA)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Try Again")
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainAppContent(
     viewModel: AppViewModel = viewModel()
 ) {
     var tab by remember { mutableStateOf(Tab.Today) }

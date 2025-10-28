@@ -8,12 +8,27 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import android.net.Uri
 import kotlinx.coroutines.tasks.await
+import com.google.firebase.auth.PhoneAuthCredential
+import com.google.firebase.FirebaseException
+import com.example.overpowered.data.PhoneAuthCallback
 import com.example.overpowered.progress.LeaderboardTimeframe
 import com.example.overpowered.progress.LeaderboardRankingType
 import com.example.overpowered.progress.LeaderboardEntry
 
+sealed class PhoneAuthState {
+    object Initial : PhoneAuthState()
+    object SendingCode : PhoneAuthState()
+    data class CodeSent(val verificationId: String, val phoneNumber: String) : PhoneAuthState()
+    object VerifyingCode : PhoneAuthState()
+    object Success : PhoneAuthState()
+    data class Error(val message: String) : PhoneAuthState()
+}
 class AppViewModel : ViewModel() {
     private val repository = FirebaseRepository()
+
+    // Authentication states
+    private val _phoneAuthState = MutableStateFlow<PhoneAuthState>(PhoneAuthState.Initial)
+    val phoneAuthState: StateFlow<PhoneAuthState> = _phoneAuthState.asStateFlow()
 
     // Loading states
     private val _isLoading = MutableStateFlow(false)
@@ -94,7 +109,8 @@ class AppViewModel : ViewModel() {
 
             val currentUser = repository.getCurrentUserId()
 
-            if (currentUser != null) {
+            if (currentUser != null && !repository.isAnonymousUser()) {
+                // User is already signed in with phone
                 try {
                     val onboarded = repository.isUserOnboarded()
                     _isOnboarded.value = onboarded
@@ -102,24 +118,96 @@ class AppViewModel : ViewModel() {
                     if (onboarded) {
                         repository.initializeTaskTracking()
                         loadUserData()
+                        _phoneAuthState.value = PhoneAuthState.Success
                     }
                 } catch (e: Exception) {
                     _isOnboarded.value = false
                 }
             } else {
-                when (val authResult = repository.signInAnonymously()) {
-                    is FirebaseResult.Success -> {
-                        _isOnboarded.value = false
-                    }
-                    is FirebaseResult.Error -> {
-                        _error.value = "Authentication failed: ${authResult.exception.message}"
-                    }
-                    else -> {}
-                }
+                // No authenticated user - show phone auth
+                _phoneAuthState.value = PhoneAuthState.Initial
             }
 
             _isLoading.value = false
         }
+    }
+
+    // Phone authentication methods
+    fun startPhoneAuth(phoneNumber: String, activity: android.app.Activity) {
+        _phoneAuthState.value = PhoneAuthState.SendingCode
+
+        repository.startPhoneVerification(
+            phoneNumber = phoneNumber,
+            activity = activity,
+            callback = object : PhoneAuthCallback {
+                override fun onCodeSent(verificationId: String) {
+                    _phoneAuthState.value = PhoneAuthState.CodeSent(verificationId, phoneNumber)
+                }
+
+                override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                    viewModelScope.launch {
+                        handlePhoneSignIn(credential, phoneNumber)
+                    }
+                }
+
+                override fun onVerificationFailed(exception: FirebaseException) {
+                    _phoneAuthState.value = PhoneAuthState.Error(exception.message ?: "Verification failed")
+                }
+            }
+        )
+    }
+
+    fun verifyPhoneCode(verificationId: String, code: String, phoneNumber: String) {
+        viewModelScope.launch {
+            _phoneAuthState.value = PhoneAuthState.VerifyingCode
+
+            when (val result = repository.verifyPhoneCode(verificationId, code)) {
+                is FirebaseResult.Success -> {
+                    // Check if user is onboarded
+                    val onboarded = repository.isUserOnboarded()
+                    if (onboarded) {
+                        _isOnboarded.value = true
+                        _phoneAuthState.value = PhoneAuthState.Success
+                        repository.initializeTaskTracking()
+                        loadUserData()
+                    } else {
+                        // New user - proceed to onboarding with phone number
+                        _phoneAuthState.value = PhoneAuthState.Success
+                        _isOnboarded.value = false
+                        // Phone number will be passed to onboarding
+                    }
+                }
+                is FirebaseResult.Error -> {
+                    _phoneAuthState.value = PhoneAuthState.Error(result.exception.message ?: "Verification failed")
+                }
+                else -> {}
+            }
+        }
+    }
+
+    private suspend fun handlePhoneSignIn(credential: PhoneAuthCredential, phoneNumber: String) {
+        when (val result = repository.signInWithPhoneCredential(credential)) {
+            is FirebaseResult.Success -> {
+                val onboarded = repository.isUserOnboarded()
+                if (onboarded) {
+                    _isOnboarded.value = true
+                    _phoneAuthState.value = PhoneAuthState.Success
+                    repository.initializeTaskTracking()
+                    loadUserData()
+                } else {
+                    _phoneAuthState.value = PhoneAuthState.Success
+                    _isOnboarded.value = false
+                }
+            }
+            is FirebaseResult.Error -> {
+                _phoneAuthState.value = PhoneAuthState.Error(result.exception.message ?: "Sign in failed")
+            }
+            else -> {}
+        }
+    }
+
+    fun resetPhoneAuthState() {
+        _phoneAuthState.value = PhoneAuthState.Initial
     }
 
     fun completeOnboarding(username: String, phoneNumber: String) {

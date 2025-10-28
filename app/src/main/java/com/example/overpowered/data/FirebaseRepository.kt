@@ -11,16 +11,93 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.channels.awaitClose
+import com.google.firebase.FirebaseException
+import com.google.firebase.auth.PhoneAuthCredential
+import com.google.firebase.auth.PhoneAuthOptions
+import com.google.firebase.auth.PhoneAuthProvider
+import java.util.concurrent.TimeUnit
 import java.util.*
 
 
+// Phone authentication callback
+interface PhoneAuthCallback {
+    fun onCodeSent(verificationId: String)
+    fun onVerificationCompleted(credential: PhoneAuthCredential)
+    fun onVerificationFailed(exception: FirebaseException)
+}
 
 class FirebaseRepository {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
     private val storage = FirebaseStorage.getInstance()
 
-    // Authentication
+    // Start phone verification
+    fun startPhoneVerification(
+        phoneNumber: String,
+        activity: android.app.Activity,
+        callback: PhoneAuthCallback
+    ) {
+        val options = PhoneAuthOptions.newBuilder(auth)
+            .setPhoneNumber(phoneNumber)
+            .setTimeout(60L, TimeUnit.SECONDS)
+            .setActivity(activity)
+            .setCallbacks(object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+                override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                    callback.onVerificationCompleted(credential)
+                }
+
+                override fun onVerificationFailed(exception: FirebaseException) {
+                    callback.onVerificationFailed(exception)
+                }
+
+                override fun onCodeSent(
+                    verificationId: String,
+                    token: PhoneAuthProvider.ForceResendingToken
+                ) {
+                    callback.onCodeSent(verificationId)
+                }
+            })
+            .build()
+
+        PhoneAuthProvider.verifyPhoneNumber(options)
+    }
+
+    // Sign in with phone credential
+    suspend fun signInWithPhoneCredential(credential: PhoneAuthCredential): FirebaseResult<String> {
+        return try {
+            val result = auth.signInWithCredential(credential).await()
+            val userId = result.user?.uid ?: throw Exception("Failed to get user ID")
+            FirebaseResult.Success(userId)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
+    // Verify phone code
+    suspend fun verifyPhoneCode(verificationId: String, code: String): FirebaseResult<String> {
+        return try {
+            val credential = PhoneAuthProvider.getCredential(verificationId, code)
+            signInWithPhoneCredential(credential)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
+    // Check if current user is anonymous
+    fun isAnonymousUser(): Boolean {
+        return auth.currentUser?.isAnonymous == true
+    }
+
+    // Link anonymous account with phone credential
+    suspend fun linkAnonymousWithPhone(credential: PhoneAuthCredential): FirebaseResult<Unit> {
+        return try {
+            val currentUser = auth.currentUser ?: throw Exception("No user signed in")
+            currentUser.linkWithCredential(credential).await()
+            FirebaseResult.Success(Unit)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
     suspend fun signInAnonymously(): FirebaseResult<String> {
         return try {
             val result = auth.signInAnonymously().await()
@@ -1338,7 +1415,7 @@ class FirebaseRepository {
             for (goal in matchingGoals) {
                 val currentWeek = calculateWeekNumber(goal.createdAt ?: Date(), Date())
 
-                // Don't add points if goal is already complete or we've exceeded total weeks
+                // Don't add points if goal is already complete, or we've exceeded total weeks
                 if (goal.currentPoints >= goal.targetPoints || currentWeek >= goal.totalWeeks) {
                     continue
                 }
