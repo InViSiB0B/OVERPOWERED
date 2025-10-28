@@ -91,40 +91,27 @@ class AppViewModel : ViewModel() {
     private fun initializeApp() {
         viewModelScope.launch {
             _isLoading.value = true
-            android.util.Log.d("AppViewModel", "Initializing app...")
 
-            // Check if user is already signed in
             val currentUser = repository.getCurrentUserId()
 
             if (currentUser != null) {
-                android.util.Log.d("AppViewModel", "User already signed in: $currentUser")
-
-                // Check onboarding status
                 try {
                     val onboarded = repository.isUserOnboarded()
-                    android.util.Log.d("AppViewModel", "Onboarding status: $onboarded")
                     _isOnboarded.value = onboarded
 
                     if (onboarded) {
                         repository.initializeTaskTracking()
                         loadUserData()
-                    } else {
-                        android.util.Log.d("AppViewModel", "User needs onboarding")
                     }
                 } catch (e: Exception) {
-                    android.util.Log.e("AppViewModel", "Error checking onboarding: ${e.message}")
                     _isOnboarded.value = false
                 }
             } else {
-                android.util.Log.d("AppViewModel", "No user signed in, signing in anonymously...")
-                // Sign in anonymously for now
                 when (val authResult = repository.signInAnonymously()) {
                     is FirebaseResult.Success -> {
-                        android.util.Log.d("AppViewModel", "Auth successful! UserId: ${authResult.data}")
-                        _isOnboarded.value = false // New user needs onboarding
+                        _isOnboarded.value = false
                     }
                     is FirebaseResult.Error -> {
-                        android.util.Log.e("AppViewModel", "Auth failed: ${authResult.exception.message}")
                         _error.value = "Authentication failed: ${authResult.exception.message}"
                     }
                     else -> {}
@@ -138,44 +125,21 @@ class AppViewModel : ViewModel() {
     fun completeOnboarding(username: String, phoneNumber: String) {
         viewModelScope.launch {
             _isLoading.value = true
-            android.util.Log.d("AppViewModel", "Starting onboarding for username: $username")
 
-            val result = repository.completeOnboarding(username, phoneNumber)
-            android.util.Log.d("AppViewModel", "Got result from repository: $result")
-
-            when (result) {
+            when (val result = repository.completeOnboarding(username, phoneNumber)) {
                 is FirebaseResult.Success -> {
-                    android.util.Log.d("AppViewModel", "Result is Success!")
-
-                    // Wait a moment for Firestore to sync
                     kotlinx.coroutines.delay(500)
-
-                    // Set onboarded state
-                    android.util.Log.d("AppViewModel", "Setting isOnboarded to true...")
                     _isOnboarded.value = true
-                    android.util.Log.d("AppViewModel", "isOnboarded is now: ${_isOnboarded.value}")
-
-                    // Initialize task tracking
-                    android.util.Log.d("AppViewModel", "Initializing task tracking...")
                     repository.initializeTaskTracking()
-
-                    // Load user data
-                    android.util.Log.d("AppViewModel", "Loading user data...")
                     loadUserData()
-
-                    android.util.Log.d("AppViewModel", "Onboarding complete!")
                 }
                 is FirebaseResult.Error -> {
-                    android.util.Log.e("AppViewModel", "Result is Error: ${result.exception.message}")
                     _error.value = "Failed to complete onboarding: ${result.exception.message}"
                 }
-                else -> {
-                    android.util.Log.e("AppViewModel", "Result is unknown type: $result")
-                }
+                else -> {}
             }
 
             _isLoading.value = false
-            android.util.Log.d("AppViewModel", "Loading set to false, final isOnboarded state: ${_isOnboarded.value}")
         }
     }
 
@@ -377,42 +341,30 @@ class AppViewModel : ViewModel() {
     fun completeTask(taskId: String?, experienceReward: Int = 10, moneyReward: Int = 10) {
         if (taskId == null) {
             _error.value = "Cannot complete a task with a null ID."
-            android.util.Log.e("AppViewModel", "completeTask was called with a null taskId.")
             return
         }
         viewModelScope.launch {
-            android.util.Log.d("AppViewModel", "Completing task: $taskId")
-
-            // Get the task and its tags BEFORE marking it complete
             val task = _tasks.value.find { it.id == taskId }
             val taskTags = task?.tags ?: emptyList()
 
-            // Complete the task in Firebase
-            val result = repository.completeTask(taskId, experienceReward, moneyReward)
-            android.util.Log.d("AppViewModel", "Task completion result: $result")
+            repository.completeTask(taskId, experienceReward, moneyReward)
 
-            // Update long-term goal progress for matching goals
             if (taskTags.isNotEmpty()) {
                 try {
                     repository.updateGoalProgressForTask(taskId, taskTags, experienceReward)
                 } catch (e: Exception) {
-                    android.util.Log.e("AppViewModel", "Error updating goal progress: ${e.message}", e)
+                    // Silent fail
                 }
             }
 
-            // Manually refresh the profile to get updated stats
             kotlinx.coroutines.delay(300)
             when (val profileResult = repository.getUserProfile()) {
                 is FirebaseResult.Success -> {
                     _userProfile.value = profileResult.data
-                    android.util.Log.d("AppViewModel", "Profile refreshed - weeklyTasks: ${profileResult.data.weeklyTasksCompleted}, exp: ${profileResult.data.playerExperience}")
                 }
-                else -> {
-                    android.util.Log.e("AppViewModel", "Failed to refresh profile")
-                }
+                else -> {}
             }
 
-            // Refresh completed tasks and leaderboard
             refreshCompletedTasks()
         }
     }
@@ -420,7 +372,6 @@ class AppViewModel : ViewModel() {
     fun deleteTask(taskId: String?) {
         if (taskId == null) {
             _error.value = "Cannot delete a task with a null ID."
-            android.util.Log.e("AppViewModel", "deleteTask was called with a null taskId.")
             return
         }
         viewModelScope.launch {
@@ -437,7 +388,6 @@ class AppViewModel : ViewModel() {
     fun deleteSingleRecurringOccurrence(taskId: String?) {
         if (taskId == null) {
             _error.value = "Cannot delete a task with a null ID."
-            android.util.Log.e("AppViewModel", "deleteSingleRecurringOccurrence was called with a null taskId.")
             return
         }
         viewModelScope.launch {
@@ -445,9 +395,7 @@ class AppViewModel : ViewModel() {
                 is FirebaseResult.Error -> {
                     _error.value = "Failed to delete task: ${result.exception.message}"
                 }
-                else -> {
-                    android.util.Log.d("AppViewModel", "Successfully deleted single occurrence and created next")
-                }
+                else -> {}
             }
         }
     }
