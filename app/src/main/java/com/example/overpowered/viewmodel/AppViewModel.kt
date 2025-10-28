@@ -22,6 +22,10 @@ class AppViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    // Onboarding state
+    private val _isOnboarded = MutableStateFlow(false)
+    val isOnboarded: StateFlow<Boolean> = _isOnboarded.asStateFlow()
+
     // User profile state
     private val _userProfile = MutableStateFlow(UserProfile())
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
@@ -89,24 +93,89 @@ class AppViewModel : ViewModel() {
             _isLoading.value = true
             android.util.Log.d("AppViewModel", "Initializing app...")
 
-            // Initialize authentication
-            when (val authResult = repository.signInAnonymously()) {
-                is FirebaseResult.Success -> {
-                    android.util.Log.d("AppViewModel", "Auth successful! UserId: ${authResult.data}")
+            // Check if user is already signed in
+            val currentUser = repository.getCurrentUserId()
 
-                    // Initialize task tracking for existing users
-                    repository.initializeTaskTracking()
+            if (currentUser != null) {
+                android.util.Log.d("AppViewModel", "User already signed in: $currentUser")
 
-                    loadUserData()
+                // Check onboarding status
+                try {
+                    val onboarded = repository.isUserOnboarded()
+                    android.util.Log.d("AppViewModel", "Onboarding status: $onboarded")
+                    _isOnboarded.value = onboarded
+
+                    if (onboarded) {
+                        repository.initializeTaskTracking()
+                        loadUserData()
+                    } else {
+                        android.util.Log.d("AppViewModel", "User needs onboarding")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("AppViewModel", "Error checking onboarding: ${e.message}")
+                    _isOnboarded.value = false
                 }
-                is FirebaseResult.Error -> {
-                    android.util.Log.e("AppViewModel", "Auth failed: ${authResult.exception.message}")
-                    _error.value = "Authentication failed: ${authResult.exception.message}"
+            } else {
+                android.util.Log.d("AppViewModel", "No user signed in, signing in anonymously...")
+                // Sign in anonymously for now
+                when (val authResult = repository.signInAnonymously()) {
+                    is FirebaseResult.Success -> {
+                        android.util.Log.d("AppViewModel", "Auth successful! UserId: ${authResult.data}")
+                        _isOnboarded.value = false // New user needs onboarding
+                    }
+                    is FirebaseResult.Error -> {
+                        android.util.Log.e("AppViewModel", "Auth failed: ${authResult.exception.message}")
+                        _error.value = "Authentication failed: ${authResult.exception.message}"
+                    }
+                    else -> {}
                 }
-                else -> {}
             }
 
             _isLoading.value = false
+        }
+    }
+
+    fun completeOnboarding(username: String, phoneNumber: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            android.util.Log.d("AppViewModel", "Starting onboarding for username: $username")
+
+            val result = repository.completeOnboarding(username, phoneNumber)
+            android.util.Log.d("AppViewModel", "Got result from repository: $result")
+
+            when (result) {
+                is FirebaseResult.Success -> {
+                    android.util.Log.d("AppViewModel", "Result is Success!")
+
+                    // Wait a moment for Firestore to sync
+                    kotlinx.coroutines.delay(500)
+
+                    // Set onboarded state
+                    android.util.Log.d("AppViewModel", "Setting isOnboarded to true...")
+                    _isOnboarded.value = true
+                    android.util.Log.d("AppViewModel", "isOnboarded is now: ${_isOnboarded.value}")
+
+                    // Initialize task tracking
+                    android.util.Log.d("AppViewModel", "Initializing task tracking...")
+                    repository.initializeTaskTracking()
+
+                    // Load user data
+                    android.util.Log.d("AppViewModel", "Loading user data...")
+                    loadUserData()
+
+                    android.util.Log.d("AppViewModel", "Onboarding complete!")
+                }
+                is FirebaseResult.Error -> {
+                    android.util.Log.e("AppViewModel", "Result is Error: ${result.exception.message}")
+                    _error.value = "Failed to complete onboarding: ${result.exception.message}"
+                }
+                else -> {
+                    android.util.Log.e("AppViewModel", "Result is unknown type: $result")
+                }
+            }
+
+            _isLoading.value = false
+            android.util.Log.d("AppViewModel", "Loading set to false, final isOnboarded state: ${_isOnboarded.value}")
         }
     }
 
@@ -206,13 +275,17 @@ class AppViewModel : ViewModel() {
     // Profile operations
     fun updatePlayerName(name: String) {
         viewModelScope.launch {
-            val updatedProfile = _userProfile.value.copy(playerName = name)
-            when (val result = repository.saveUserProfile(updatedProfile)) {
+            _isLoading.value = true
+            when (val result = repository.updatePlayerNameWithDiscriminator(name)) {
+                is FirebaseResult.Success -> {
+                    _error.value = "Name updated successfully!"
+                }
                 is FirebaseResult.Error -> {
                     _error.value = "Failed to update name: ${result.exception.message}"
                 }
                 else -> {}
             }
+            _isLoading.value = false
         }
     }
 
