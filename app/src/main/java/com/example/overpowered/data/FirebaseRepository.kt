@@ -125,7 +125,7 @@ class FirebaseRepository {
     suspend fun generateUniqueDiscriminator(username: String): String {
         val existingDiscriminators = getExistingDiscriminators(username)
 
-        // If all 10,000 discriminators are taken (0000-9999)
+        // If all 10,000 discriminators are taken (0000-9999))
         if (existingDiscriminators.size >= 10000) {
             throw Exception("All discriminators for username '$username' are taken")
         }
