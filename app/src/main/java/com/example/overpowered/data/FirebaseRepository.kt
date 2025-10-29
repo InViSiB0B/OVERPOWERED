@@ -88,26 +88,6 @@ class FirebaseRepository {
         return auth.currentUser?.isAnonymous == true
     }
 
-    // Link anonymous account with phone credential
-    suspend fun linkAnonymousWithPhone(credential: PhoneAuthCredential): FirebaseResult<Unit> {
-        return try {
-            val currentUser = auth.currentUser ?: throw Exception("No user signed in")
-            currentUser.linkWithCredential(credential).await()
-            FirebaseResult.Success(Unit)
-        } catch (e: Exception) {
-            FirebaseResult.Error(e)
-        }
-    }
-    suspend fun signInAnonymously(): FirebaseResult<String> {
-        return try {
-            val result = auth.signInAnonymously().await()
-            val userId = result.user?.uid ?: throw Exception("Failed to get user ID")
-            FirebaseResult.Success(userId)
-        } catch (e: Exception) {
-            FirebaseResult.Error(e)
-        }
-    }
-
     fun getCurrentUserId(): String? = auth.currentUser?.uid
 
     // Check if username+discriminator combo exists

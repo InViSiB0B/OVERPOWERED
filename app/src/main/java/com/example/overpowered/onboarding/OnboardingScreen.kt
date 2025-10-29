@@ -34,7 +34,7 @@ fun OnboardingScreen(
         ) {
             // App logo/title
             Text(
-                text = "🎮",
+                text = "OP",
                 fontSize = 72.sp
             )
 
