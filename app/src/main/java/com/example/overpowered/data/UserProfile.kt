@@ -21,6 +21,7 @@ enum class RecurrenceType(val displayName: String, val value: String) {
 data class UserProfile(
     val userId: String = "",
     val playerName: String = "Player Name",
+    val discriminator: String = "0000", // 4-digit identifier
     val profileImageUrl: String? = null, // Firebase Storage URL
     val playerExperience: Int = 0,
     val playerLevel: Int = 1,
@@ -34,9 +35,24 @@ data class UserProfile(
     val lifetimeTasksCompleted: Int = 0,
     val tags: List<String> = emptyList(),
 
+    @get:PropertyName("isOnboarded") @set:PropertyName("isOnboarded")
+    var isOnboarded: Boolean = false,  // Change to var and add annotation
+
+    val phoneNumber: String? = null,
+
+
 
     @ServerTimestamp
     val lastUpdated: Date? = null,
+    @ServerTimestamp
+    val createdAt: Date? = null
+)
+
+// Track username+discriminator combinations
+data class UsernameDiscriminator(
+    val username: String = "",
+    val discriminator: String = "",
+    val userId: String = "",
     @ServerTimestamp
     val createdAt: Date? = null
 )

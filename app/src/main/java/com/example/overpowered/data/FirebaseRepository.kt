@@ -11,19 +11,61 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.channels.awaitClose
+import com.google.firebase.FirebaseException
+import com.google.firebase.auth.PhoneAuthCredential
+import com.google.firebase.auth.PhoneAuthOptions
+import com.google.firebase.auth.PhoneAuthProvider
+import java.util.concurrent.TimeUnit
 import java.util.*
 
 
+// Phone authentication callback
+interface PhoneAuthCallback {
+    fun onCodeSent(verificationId: String)
+    fun onVerificationCompleted(credential: PhoneAuthCredential)
+    fun onVerificationFailed(exception: FirebaseException)
+}
 
 class FirebaseRepository {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
     private val storage = FirebaseStorage.getInstance()
 
-    // Authentication
-    suspend fun signInAnonymously(): FirebaseResult<String> {
+    // Start phone verification
+    fun startPhoneVerification(
+        phoneNumber: String,
+        activity: android.app.Activity,
+        callback: PhoneAuthCallback
+    ) {
+        val options = PhoneAuthOptions.newBuilder(auth)
+            .setPhoneNumber(phoneNumber)
+            .setTimeout(60L, TimeUnit.SECONDS)
+            .setActivity(activity)
+            .setCallbacks(object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+                override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                    callback.onVerificationCompleted(credential)
+                }
+
+                override fun onVerificationFailed(exception: FirebaseException) {
+                    callback.onVerificationFailed(exception)
+                }
+
+                override fun onCodeSent(
+                    verificationId: String,
+                    token: PhoneAuthProvider.ForceResendingToken
+                ) {
+                    callback.onCodeSent(verificationId)
+                }
+            })
+            .build()
+
+        PhoneAuthProvider.verifyPhoneNumber(options)
+    }
+
+    // Sign in with phone credential
+    suspend fun signInWithPhoneCredential(credential: PhoneAuthCredential): FirebaseResult<String> {
         return try {
-            val result = auth.signInAnonymously().await()
+            val result = auth.signInWithCredential(credential).await()
             val userId = result.user?.uid ?: throw Exception("Failed to get user ID")
             FirebaseResult.Success(userId)
         } catch (e: Exception) {
@@ -31,7 +73,193 @@ class FirebaseRepository {
         }
     }
 
+    // Verify phone code
+    suspend fun verifyPhoneCode(verificationId: String, code: String): FirebaseResult<String> {
+        return try {
+            val credential = PhoneAuthProvider.getCredential(verificationId, code)
+            signInWithPhoneCredential(credential)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
+    // Check if current user is anonymous
+    fun isAnonymousUser(): Boolean {
+        return auth.currentUser?.isAnonymous == true
+    }
+
     fun getCurrentUserId(): String? = auth.currentUser?.uid
+
+    // Check if username+discriminator combo exists
+    suspend fun isUsernameDiscriminatorTaken(username: String, discriminator: String): Boolean {
+        return try {
+            val snapshot = firestore.collection("usernameDiscriminators")
+                .whereEqualTo("username", username.lowercase())
+                .whereEqualTo("discriminator", discriminator)
+                .get()
+                .await()
+
+            !snapshot.isEmpty
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    // Get all discriminators for a username
+    suspend fun getExistingDiscriminators(username: String): List<String> {
+        return try {
+            val snapshot = firestore.collection("usernameDiscriminators")
+                .whereEqualTo("username", username.lowercase())
+                .get()
+                .await()
+
+            snapshot.documents.mapNotNull {
+                it.toObject(UsernameDiscriminator::class.java)?.discriminator
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    // Generate unique discriminator for username
+    suspend fun generateUniqueDiscriminator(username: String): String {
+        val existingDiscriminators = getExistingDiscriminators(username)
+
+        // If all 10,000 discriminators are taken (0000-9999)
+        if (existingDiscriminators.size >= 10000) {
+            throw Exception("All discriminators for username '$username' are taken")
+        }
+
+        // Generate random 4-digit discriminator that's not taken
+        val availableDiscriminators = (0..9999).map { it.toString().padStart(4, '0') }
+            .filterNot { it in existingDiscriminators }
+
+        return availableDiscriminators.random()
+    }
+
+    // Save username+discriminator combination
+    suspend fun saveUsernameDiscriminator(username: String, discriminator: String, userId: String): FirebaseResult<Unit> {
+        return try {
+            val usernameDiscriminator = UsernameDiscriminator(
+                username = username.lowercase(),
+                discriminator = discriminator,
+                userId = userId,
+                createdAt = Date()
+            )
+
+            firestore.collection("usernameDiscriminators")
+                .add(usernameDiscriminator)
+                .await()
+
+            FirebaseResult.Success(Unit)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
+    // Delete old username+discriminator when user changes name
+    suspend fun deleteOldUsernameDiscriminator(userId: String): FirebaseResult<Unit> {
+        return try {
+            val snapshot = firestore.collection("usernameDiscriminators")
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+
+            snapshot.documents.forEach { it.reference.delete().await() }
+
+            FirebaseResult.Success(Unit)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
+    // Update user profile with new name and discriminator
+    suspend fun updatePlayerNameWithDiscriminator(newName: String): FirebaseResult<Unit> {
+        val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
+
+        return try {
+            // Delete old username+discriminator entry
+            deleteOldUsernameDiscriminator(userId)
+
+            // Generate new discriminator
+            val newDiscriminator = generateUniqueDiscriminator(newName)
+
+            // Save new username+discriminator
+            saveUsernameDiscriminator(newName, newDiscriminator, userId)
+
+            // Update profile
+            val profileResult = getUserProfile()
+            if (profileResult is FirebaseResult.Success) {
+                val updatedProfile = profileResult.data.copy(
+                    playerName = newName,
+                    discriminator = newDiscriminator
+                )
+                saveUserProfile(updatedProfile)
+            } else {
+                throw Exception("Failed to get current profile")
+            }
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
+    // Phone authentication
+    suspend fun signInWithPhone(verificationId: String, code: String): FirebaseResult<String> {
+        return try {
+            val credential = com.google.firebase.auth.PhoneAuthProvider.getCredential(verificationId, code)
+            val result = auth.signInWithCredential(credential).await()
+            val userId = result.user?.uid ?: throw Exception("Failed to get user ID")
+            FirebaseResult.Success(userId)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
+    // Check if user is new (not onboarded)
+    suspend fun isUserOnboarded(): Boolean {
+        val profileResult = getUserProfile()
+        return if (profileResult is FirebaseResult.Success) {
+            profileResult.data.isOnboarded
+        } else {
+            false
+        }
+    }
+
+    // Complete onboarding
+    suspend fun completeOnboarding(username: String, phoneNumber: String): FirebaseResult<Unit> {
+        val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
+
+        return try {
+            val discriminator = generateUniqueDiscriminator(username)
+            saveUsernameDiscriminator(username, discriminator, userId)
+
+            val profileResult = getUserProfile()
+
+            when (profileResult) {
+                is FirebaseResult.Success -> {
+                    val updatedProfile = profileResult.data.copy(
+                        playerName = username,
+                        discriminator = discriminator,
+                        isOnboarded = true,
+                        phoneNumber = phoneNumber
+                    )
+
+                    val saveResult = saveUserProfile(updatedProfile)
+
+                    when (saveResult) {
+                        is FirebaseResult.Success -> FirebaseResult.Success(Unit)
+                        is FirebaseResult.Error -> throw saveResult.exception
+                        else -> throw Exception("Unknown save result")
+                    }
+                }
+                is FirebaseResult.Error -> throw profileResult.exception
+                else -> throw Exception("Unknown error getting profile")
+            }
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
 
     // Profile operations
     suspend fun saveUserProfile(profile: UserProfile): FirebaseResult<Unit> {
@@ -111,14 +339,11 @@ class FirebaseRepository {
         val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
 
         return try {
-            android.util.Log.d("FirebaseRepo", "addTask called with - isRecurring: ${task.isRecurring}, recurrenceType: ${task.recurrenceType}, dueDate: ${task.dueDate}")
             val taskWithUserId = task.copy(
                 userId = userId,
                 createdAt = Date(),
                 isCompleted = false
             )
-
-            android.util.Log.d("FirebaseRepo", "taskWithUserId - isRecurring: ${taskWithUserId.isRecurring}, recurrenceType: ${taskWithUserId.recurrenceType}")
 
             val taskMap = mapOf(
                 "title" to taskWithUserId.title,
@@ -134,17 +359,12 @@ class FirebaseRepository {
                 "recurrenceParentId" to taskWithUserId.recurrenceParentId
             )
 
-            android.util.Log.d("FirebaseRepo", "taskMap - isRecurring: ${taskMap["isRecurring"]}, recurrenceType: ${taskMap["recurrenceType"]}")
-
-
             val docRef = firestore.collection("users")
                 .document(userId)
                 .collection("tasks")
                 .add(taskMap)
                 .await()
 
-            // If it's a recurring task and doesn't have a parent ID yet,
-            // set its own ID as the parent ID
             if (taskWithUserId.isRecurring && taskWithUserId.recurrenceParentId == null) {
                 firestore.collection("users")
                     .document(userId)
@@ -182,9 +402,6 @@ class FirebaseRepository {
         val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
 
         return try {
-            android.util.Log.d("FirebaseRepo", "Deleting all instances with parentId: $recurrenceParentId")
-
-            // Find all tasks with this recurrence parent ID
             val tasksSnapshot = firestore.collection("users")
                 .document(userId)
                 .collection("tasks")
@@ -192,7 +409,6 @@ class FirebaseRepository {
                 .get()
                 .await()
 
-            // Also delete the original task if it has this ID
             val originalTaskSnapshot = firestore.collection("users")
                 .document(userId)
                 .collection("tasks")
@@ -200,7 +416,6 @@ class FirebaseRepository {
                 .get()
                 .await()
 
-            // Delete all in a batch
             val batch = firestore.batch()
 
             tasksSnapshot.documents.forEach { doc ->
@@ -213,10 +428,8 @@ class FirebaseRepository {
 
             batch.commit().await()
 
-            android.util.Log.d("FirebaseRepo", "Deleted ${tasksSnapshot.size() + 1} recurring task instances")
             FirebaseResult.Success(Unit)
         } catch (e: Exception) {
-            android.util.Log.e("FirebaseRepo", "Error deleting recurring instances: ${e.message}", e)
             FirebaseResult.Error(e)
         }
     }
@@ -280,9 +493,6 @@ class FirebaseRepository {
         val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
 
         return try {
-            android.util.Log.d("FirebaseRepo", "Deleting single occurrence: $taskId")
-
-            // First, get the task to check if it's recurring
             val taskDoc = firestore.collection("users")
                 .document(userId)
                 .collection("tasks")
@@ -292,9 +502,6 @@ class FirebaseRepository {
 
             val task = taskDoc.toObject(FirebaseTask::class.java)?.copy(id = taskId)
 
-            android.util.Log.d("FirebaseRepo", "Task retrieved - isRecurring: ${task?.isRecurring}, recurrenceType: ${task?.recurrenceType}")
-
-            // Delete the current task
             firestore.collection("users")
                 .document(userId)
                 .collection("tasks")
@@ -302,14 +509,8 @@ class FirebaseRepository {
                 .delete()
                 .await()
 
-            android.util.Log.d("FirebaseRepo", "Task deleted")
-
-            // If it's a recurring task, create the next occurrence
             if (task?.isRecurring == true && task.recurrenceType != null && task.dueDate != null) {
-                android.util.Log.d("FirebaseRepo", "Generating next occurrence for recurring task")
-
                 val nextDueDate = calculateNextOccurrence(task.dueDate, task.recurrenceType)
-                android.util.Log.d("FirebaseRepo", "Next due date calculated: $nextDueDate")
 
                 val nextTask = task.copy(
                     id = null,
@@ -320,25 +521,11 @@ class FirebaseRepository {
                     recurrenceParentId = task.recurrenceParentId ?: taskId
                 )
 
-                android.util.Log.d("FirebaseRepo", "Creating next task with recurrenceParentId: ${nextTask.recurrenceParentId}")
-                val addResult = addTask(nextTask)
-
-                when (addResult) {
-                    is FirebaseResult.Success -> {
-                        android.util.Log.d("FirebaseRepo", "Next occurrence created successfully with ID: ${addResult.data}")
-                    }
-                    is FirebaseResult.Error -> {
-                        android.util.Log.e("FirebaseRepo", "Failed to create next occurrence: ${addResult.exception.message}")
-                    }
-                    else -> {}
-                }
-            } else {
-                android.util.Log.d("FirebaseRepo", "Not a recurring task or missing required fields")
+                addTask(nextTask)
             }
 
             FirebaseResult.Success(Unit)
         } catch (e: Exception) {
-            android.util.Log.e("FirebaseRepo", "Error deleting single occurrence: ${e.message}", e)
             FirebaseResult.Error(e)
         }
     }
@@ -347,9 +534,6 @@ class FirebaseRepository {
         val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
 
         return try {
-            android.util.Log.d("FirebaseRepo", "Completing task: $taskId")
-
-            // First, get the task to check if it's recurring
             val taskDoc = firestore.collection("users")
                 .document(userId)
                 .collection("tasks")
@@ -357,16 +541,8 @@ class FirebaseRepository {
                 .get()
                 .await()
 
-            android.util.Log.d("FirebaseRepo", "Raw Firestore data: ${taskDoc.data}")
-            android.util.Log.d("FirebaseRepo", "isRecurring field from Firestore: ${taskDoc.data?.get("isRecurring")}")
-            android.util.Log.d("FirebaseRepo", "recurrenceType field from Firestore: ${taskDoc.data?.get("recurrenceType")}")
-
             val task = taskDoc.toObject(FirebaseTask::class.java)?.copy(id = taskId)
 
-            // Add detailed logging
-            android.util.Log.d("FirebaseRepo", "Task retrieved - isRecurring: ${task?.isRecurring}, recurrenceType: ${task?.recurrenceType}, dueDate: ${task?.dueDate}")
-
-            // Mark task as completed
             val updates = mapOf(
                 "isCompleted" to true,
                 "completedAt" to Date(),
@@ -374,17 +550,12 @@ class FirebaseRepository {
                 "moneyReward" to moneyReward
             )
             updateTask(taskId, updates)
-            android.util.Log.d("FirebaseRepo", "Task marked as completed")
 
-            // If it's a recurring task, create the next occurrence
             if (task?.isRecurring == true && task.recurrenceType != null && task.dueDate != null) {
-                android.util.Log.d("FirebaseRepo", "Generating next occurrence for recurring task")
-
                 val nextDueDate = calculateNextOccurrence(task.dueDate, task.recurrenceType)
-                android.util.Log.d("FirebaseRepo", "Next due date calculated: $nextDueDate")
 
                 val nextTask = task.copy(
-                    id = null, // Will get new ID from Firestore
+                    id = null,
                     isCompleted = false,
                     completedAt = null,
                     createdAt = Date(),
@@ -392,34 +563,18 @@ class FirebaseRepository {
                     recurrenceParentId = task.recurrenceParentId ?: taskId
                 )
 
-                android.util.Log.d("FirebaseRepo", "Creating next task with recurrenceParentId: ${nextTask.recurrenceParentId}")
-                val addResult = addTask(nextTask)
-
-                when (addResult) {
-                    is FirebaseResult.Success -> {
-                        android.util.Log.d("FirebaseRepo", "Next occurrence created successfully with ID: ${addResult.data}")
-                    }
-                    is FirebaseResult.Error -> {
-                        android.util.Log.e("FirebaseRepo", "Failed to create next occurrence: ${addResult.exception.message}")
-                    }
-                    else -> {}
-                }
-            } else {
-                android.util.Log.d("FirebaseRepo", "Not a recurring task or missing required fields")
+                addTask(nextTask)
             }
 
-            // Update profile with stats
             val profileResult = getUserProfile()
             if (profileResult is FirebaseResult.Success) {
                 val profile = profileResult.data
-                android.util.Log.d("FirebaseRepo", "Current profile - weeklyTasks: ${profile.weeklyTasksCompleted}, lifetimeTasks: ${profile.lifetimeTasksCompleted}")
 
                 val newExperience = profile.playerExperience + experienceReward
                 val newMoney = profile.playerMoney + moneyReward
                 val newLevel = (newExperience / 100) + 1
 
                 val needsReset = isNewWeek(profile.weekStartDate)
-                android.util.Log.d("FirebaseRepo", "Needs weekly reset: $needsReset")
 
                 val updatedProfile = if (needsReset) {
                     profile.copy(
@@ -442,16 +597,11 @@ class FirebaseRepository {
                     )
                 }
 
-                android.util.Log.d("FirebaseRepo", "Updated profile - weeklyTasks: ${updatedProfile.weeklyTasksCompleted}, lifetimeTasks: ${updatedProfile.lifetimeTasksCompleted}")
                 saveUserProfile(updatedProfile)
-                android.util.Log.d("FirebaseRepo", "Profile saved successfully")
-            } else {
-                android.util.Log.e("FirebaseRepo", "Failed to get profile")
             }
 
             FirebaseResult.Success(Unit)
         } catch (e: Exception) {
-            android.util.Log.e("FirebaseRepo", "Error completing task: ${e.message}", e)
             FirebaseResult.Error(e)
         }
     }
@@ -696,10 +846,23 @@ class FirebaseRepository {
     }
 
     // ==================== FRIEND REQUEST OPERATIONS (SUBCOLLECTION) ====================
-    suspend fun sendFriendRequest(playerName: String): FirebaseResult<Unit> {
+    suspend fun sendFriendRequest(playerNameWithDiscriminator: String): FirebaseResult<Unit> {
         val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
 
         return try {
+            // Parse username and discriminator (e.g., "Bob#1234")
+            val parts = playerNameWithDiscriminator.split("#")
+            if (parts.size != 2) {
+                return FirebaseResult.Error(Exception("Invalid format. Use Username#1234"))
+            }
+
+            val targetUsername = parts[0]
+            val targetDiscriminator = parts[1]
+
+            if (targetDiscriminator.length != 4 || !targetDiscriminator.all { it.isDigit() }) {
+                return FirebaseResult.Error(Exception("Invalid discriminator. Must be 4 digits"))
+            }
+
             // Get current user's profile
             val currentUserProfile = when (val result = getUserProfile()) {
                 is FirebaseResult.Success -> result.data
@@ -707,9 +870,10 @@ class FirebaseRepository {
                 else -> throw Exception("Failed to get current user profile")
             }
 
-            // Search for user by player name
+            // Search for user by username AND discriminator
             val querySnapshot = firestore.collection("users")
-                .whereEqualTo("playerName", playerName)
+                .whereEqualTo("playerName", targetUsername)
+                .whereEqualTo("discriminator", targetDiscriminator)
                 .get()
                 .await()
 
@@ -725,12 +889,12 @@ class FirebaseRepository {
                 return FirebaseResult.Error(Exception("You cannot send a friend request to yourself"))
             }
 
-            // Create friend request in RECIPIENT's subcollection
+            // Create friend request
             val friendRequest = mapOf(
                 "fromUserId" to userId,
-                "fromUserName" to currentUserProfile.playerName,
+                "fromUserName" to "${currentUserProfile.playerName}#${currentUserProfile.discriminator}",
                 "toUserId" to targetUser.userId,
-                "toUserName" to targetUser.playerName,
+                "toUserName" to "${targetUser.playerName}#${targetUser.discriminator}",
                 "status" to "pending",
                 "createdAt" to Date()
             )
@@ -1231,7 +1395,7 @@ class FirebaseRepository {
             for (goal in matchingGoals) {
                 val currentWeek = calculateWeekNumber(goal.createdAt ?: Date(), Date())
 
-                // Don't add points if goal is already complete or we've exceeded total weeks
+                // Don't add points if goal is already complete, or we've exceeded total weeks
                 if (goal.currentPoints >= goal.targetPoints || currentWeek >= goal.totalWeeks) {
                     continue
                 }
