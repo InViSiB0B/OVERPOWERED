@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.overpowered.data.FriendRequest
+import com.example.overpowered.profile.components.FramedProfilePicture
 
 @Composable
 fun FriendRequestsDialog(

@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.ui.text.style.TextAlign
 import com.example.overpowered.data.GoalSize
 import com.example.overpowered.data.LongTermGoal
+import com.example.overpowered.profile.components.FramedProfilePicture
 
 // ---------- UI models  ----------
 data class PlayerStats(
@@ -73,6 +74,7 @@ data class LeaderboardEntry(
     val userId: String,
     val playerName: String,
     val profileImageUrl: String?,
+    val selectedFrame: String?,
     val level: Int,
     val tasksCompleted: Int,
     val rank: Int
@@ -539,13 +541,10 @@ fun LeaderboardEntryRow(
                 contentAlignment = Alignment.Center
             ) {
                 if (entry.profileImageUrl != null) {
-                    Image(
-                        painter = rememberAsyncImagePainter(entry.profileImageUrl),
-                        contentDescription = "Profile",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
+                    FramedProfilePicture(
+                        profileImageUrl = entry.profileImageUrl,
+                        frameId = entry.selectedFrame, // You'll need to add this to LeaderboardEntry
+                        size = 36.dp
                     )
                 } else {
                     Icon(
