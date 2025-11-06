@@ -31,6 +31,14 @@ class FirebaseRepository {
     private val auth = FirebaseAuth.getInstance()
     private val storage = FirebaseStorage.getInstance()
 
+    fun saveFcmToken(token: String) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(uid)
+            .update("fcmToken", token)
+    }
+
     // Start phone verifications
     fun startPhoneVerification(
         phoneNumber: String,
@@ -300,8 +308,6 @@ class FirebaseRepository {
             FirebaseResult.Error(e)
         }
     }
-
-    fun signOut() { auth.signOut() }
 
     // Real-time profile updates
     fun observeUserProfile(): Flow<FirebaseResult<UserProfile>> {
