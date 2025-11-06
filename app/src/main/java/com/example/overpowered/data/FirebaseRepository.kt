@@ -31,6 +31,14 @@ class FirebaseRepository {
     private val auth = FirebaseAuth.getInstance()
     private val storage = FirebaseStorage.getInstance()
 
+    fun saveFcmToken(token: String) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(uid)
+            .update("fcmToken", token)
+    }
+
     // Start phone verification
     fun startPhoneVerification(
         phoneNumber: String,

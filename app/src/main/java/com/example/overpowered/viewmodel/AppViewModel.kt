@@ -14,6 +14,7 @@ import com.example.overpowered.data.PhoneAuthCallback
 import com.example.overpowered.progress.LeaderboardTimeframe
 import com.example.overpowered.progress.LeaderboardRankingType
 import com.example.overpowered.progress.LeaderboardEntry
+import com.google.firebase.messaging.FirebaseMessaging
 
 sealed class PhoneAuthState {
     object Initial : PhoneAuthState()
@@ -163,6 +164,8 @@ class AppViewModel : ViewModel() {
 
             when (val result = repository.verifyPhoneCode(verificationId, code)) {
                 is FirebaseResult.Success -> {
+                    saveFcmToken()
+
                     // Check if user is onboarded
                     val onboarded = repository.isUserOnboarded()
                     if (onboarded) {
@@ -188,6 +191,8 @@ class AppViewModel : ViewModel() {
     private suspend fun handlePhoneSignIn(credential: PhoneAuthCredential, phoneNumber: String) {
         when (val result = repository.signInWithPhoneCredential(credential)) {
             is FirebaseResult.Success -> {
+                saveFcmToken()
+
                 val onboarded = repository.isUserOnboarded()
                 if (onboarded) {
                     _isOnboarded.value = true
@@ -228,6 +233,12 @@ class AppViewModel : ViewModel() {
             }
 
             _isLoading.value = false
+        }
+    }
+
+    private fun saveFcmToken() {
+        FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
+            repository.saveFcmToken(token)
         }
     }
 
