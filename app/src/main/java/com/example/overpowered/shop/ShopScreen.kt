@@ -331,7 +331,7 @@ fun ShopItemCard(
                 }
             }
         }
-
+        // Item name
         Text(
             text = item.name,
             fontSize = 14.sp,
