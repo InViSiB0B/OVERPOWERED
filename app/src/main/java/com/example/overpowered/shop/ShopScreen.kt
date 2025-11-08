@@ -286,7 +286,8 @@ fun ShopItemCard(
     val canAfford = playerMoney >= item.price
 
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // Item preview card
         Card(
@@ -331,7 +332,13 @@ fun ShopItemCard(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = item.name,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF4A5568),
+            textAlign = TextAlign.Center
+        )
 
         // Price button
         Button(
