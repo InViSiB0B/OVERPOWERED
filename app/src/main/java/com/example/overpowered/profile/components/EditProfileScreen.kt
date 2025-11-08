@@ -30,6 +30,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
+import com.example.overpowered.profile.components.FramedProfilePicture
+import com.example.overpowered.data.FrameCatalog
+import com.example.overpowered.data.ProfileFrame
 import com.example.overpowered.shop.ShopItem
 
 @Composable
@@ -49,21 +52,19 @@ fun EditProfileScreen(
 ) {
     val (tempName, setTempName) = remember { mutableStateOf(playerName) }
 
-    // All available items (same as shop data)
-    val allFrames = listOf(
-        ShopItem("frame_1", "Autumn", 10, "Frames", Color(0xFFFF6B35)),
-        ShopItem("frame_2", "Confetti", 10, "Frames", Color(0xFF4ECDC4)),
-        ShopItem("frame_3", "Classic", 10, "Frames", Color(0xFF45B7D1))
-    )
+    // Get actual frames from FrameCatalog
+    val allFrames = FrameCatalog.getAllFrames()
+
+    // TODO: Replace these with actual title and theme catalogs when created
     val allTitles = listOf(
-        ShopItem("title_1", "Overpowered", 5, "Titles", Color(0xFF96CEB4)),
-        ShopItem("title_2", "Legendary", 5, "Titles", Color(0xFFFECB52)),
-        ShopItem("title_3", "Epic", 5, "Titles", Color(0xFFFF6B6B))
+        CustomizationItem("title_1", "Overpowered", "Titles"),
+        CustomizationItem("title_2", "Legendary", "Titles"),
+        CustomizationItem("title_3", "Epic", "Titles")
     )
     val allThemes = listOf(
-        ShopItem("theme_1", "Ocean", 15, "Themes", Color(0xFF4A90E2)),
-        ShopItem("theme_2", "Flame", 15, "Themes", Color(0xFFE74C3C)),
-        ShopItem("theme_3", "Void", 15, "Themes", Color(0xFF2C3E50))
+        CustomizationItem("theme_1", "Ocean", "Themes"),
+        CustomizationItem("theme_2", "Flame", "Themes"),
+        CustomizationItem("theme_3", "Void", "Themes")
     )
 
     // Filter to only owned items
@@ -84,7 +85,6 @@ fun EditProfileScreen(
             .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 130.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp)
-
     ) {
         // Back button row
         Row(
@@ -106,37 +106,13 @@ fun EditProfileScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Profile Picture (editable)
-        Card(
-            modifier = Modifier
-                .size(120.dp)
-                .clickable { imagePickerLauncher.launch("image/*") },
-            shape = RoundedCornerShape(60.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF667EEA))
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                if (profileImageUrl != null) {
-                    Image(
-                        painter = rememberAsyncImagePainter(model = profileImageUrl),
-                        contentDescription = "Profile Picture",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(60.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Icon(
-                        Icons.Filled.Person,
-                        contentDescription = "Profile Picture",
-                        tint = Color.White,
-                        modifier = Modifier.size(60.dp)
-                    )
-                }
-            }
-        }
+        // Profile Picture with Frame (editable)
+        FramedProfilePicture(
+            profileImageUrl = profileImageUrl,
+            frameId = selectedFrame,
+            size = 120.dp,
+            modifier = Modifier.clickable { imagePickerLauncher.launch("image/*") }
+        )
 
         // Change Photo button
         Button(
@@ -172,7 +148,7 @@ fun EditProfileScreen(
                 )
 
                 // Player Name field
-                Column{
+                Column {
                     Text(
                         text = "Player Name",
                         fontSize = 14.sp,
@@ -192,19 +168,17 @@ fun EditProfileScreen(
                 }
             }
 
-            // Customization Sections
-
             // Frame Selection
-            CustomizationSection(
+            FrameCustomizationSection(
                 title = "Frame:",
-                items = ownedFrames,
-                selectedItemId = selectedFrame,
-                onItemSelect = onFrameSelect,
+                frames = ownedFrames,
+                selectedFrameId = selectedFrame,
+                onFrameSelect = onFrameSelect,
                 emptyMessage = "Visit the shop to buy frames!"
             )
 
             // Title Selection
-            CustomizationSection(
+            TitleCustomizationSection(
                 title = "Title:",
                 items = ownedTitles,
                 selectedItemId = selectedTitle,
@@ -213,7 +187,7 @@ fun EditProfileScreen(
             )
 
             // Theme Selection
-            CustomizationSection(
+            ThemeCustomizationSection(
                 title = "Theme:",
                 items = ownedThemes,
                 selectedItemId = selectedTheme,
@@ -244,15 +218,23 @@ fun EditProfileScreen(
     }
 }
 
+// Simple data class for titles and themes (until you create proper catalogs)
+data class CustomizationItem(
+    val id: String,
+    val name: String,
+    val category: String
+)
+
+// Frame-specific customization section
 @Composable
-fun CustomizationSection(
+fun FrameCustomizationSection(
     title: String,
-    items: List<ShopItem>,
-    selectedItemId: String?,
-    onItemSelect: (String?) -> Unit,
+    frames: List<ProfileFrame>,
+    selectedFrameId: String?,
+    onFrameSelect: (String?) -> Unit,
     emptyMessage: String
 ) {
-    Column {
+    Column(modifier = Modifier.padding(20.dp)) {
         Text(
             text = title,
             fontSize = 16.sp,
@@ -261,19 +243,18 @@ fun CustomizationSection(
             modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
         )
 
-        if (items.isEmpty()) {
-            // Show empty state
+        if (frames.isEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF))
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "No items owned",
+                        text = "No frames owned",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFF4A5568)
@@ -287,14 +268,140 @@ fun CustomizationSection(
                 }
             }
         } else {
-            // Show owned items in horizontal scroll
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(horizontal = 4.dp)
             ) {
-                // Add "None" option first
+                // Add "None" option
                 item {
-                    SelectableItemCard(
+                    SelectableFrameCard(
+                        frame = null,
+                        isSelected = selectedFrameId == null,
+                        onSelect = { onFrameSelect(null) }
+                    )
+                }
+
+                items(frames) { frame ->
+                    SelectableFrameCard(
+                        frame = frame,
+                        isSelected = selectedFrameId == frame.id,
+                        onSelect = { onFrameSelect(frame.id) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SelectableFrameCard(
+    frame: ProfileFrame?,
+    isSelected: Boolean,
+    onSelect: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        val cardModifier = if (isSelected) {
+            Modifier
+                .size(100.dp)
+                .selectable(selected = isSelected, onClick = onSelect)
+                .border(3.dp, Color(0xFF667EEA), RoundedCornerShape(12.dp))
+        } else {
+            Modifier
+                .size(100.dp)
+                .selectable(selected = isSelected, onClick = onSelect)
+        }
+
+        Card(
+            modifier = cardModifier,
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 4.dp)
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                if (frame == null) {
+                    Text(
+                        text = "None",
+                        color = Color(0xFF4A5568),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                } else {
+                    // Show frame preview using FramedProfilePicture
+                    FramedProfilePicture(
+                        profileImageUrl = null,
+                        frameId = frame.id,
+                        size = 80.dp,
+                        iconSize = 40.dp
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = frame?.name ?: "None",
+            fontSize = 12.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            color = if (isSelected) Color(0xFF667EEA) else Color(0xFF4A5568)
+        )
+    }
+}
+
+// Keep your existing sections for titles and themes
+@Composable
+fun TitleCustomizationSection(
+    title: String,
+    items: List<CustomizationItem>,
+    selectedItemId: String?,
+    onItemSelect: (String?) -> Unit,
+    emptyMessage: String
+) {
+    Column(modifier = Modifier.padding(20.dp)) {
+        Text(
+            text = title,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color(0xFF4A5568),
+            modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
+        )
+
+        if (items.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "No titles owned",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF4A5568)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = emptyMessage,
+                        fontSize = 14.sp,
+                        color = Color(0xFF718096)
+                    )
+                }
+            }
+        } else {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
+            ) {
+                item {
+                    SelectableTitleCard(
                         item = null,
                         isSelected = selectedItemId == null,
                         onSelect = { onItemSelect(null) }
@@ -302,7 +409,7 @@ fun CustomizationSection(
                 }
 
                 items(items) { item ->
-                    SelectableItemCard(
+                    SelectableTitleCard(
                         item = item,
                         isSelected = selectedItemId == item.id,
                         onSelect = { onItemSelect(item.id) }
@@ -314,96 +421,156 @@ fun CustomizationSection(
 }
 
 @Composable
-fun SelectableItemCard(
-    item: ShopItem?,
+fun SelectableTitleCard(
+    item: CustomizationItem?,
     isSelected: Boolean,
     onSelect: () -> Unit
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Item preview card
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         val cardModifier = if (isSelected) {
             Modifier
                 .size(100.dp)
-                .selectable(
-                    selected = isSelected,
-                    onClick = onSelect
-                )
-                .border(
-                    3.dp,
-                    Color(0xFF667EEA),
-                    RoundedCornerShape(12.dp)
-                )
+                .selectable(selected = isSelected, onClick = onSelect)
+                .border(3.dp, Color(0xFF667EEA), RoundedCornerShape(12.dp))
         } else {
             Modifier
                 .size(100.dp)
-                .selectable(
-                    selected = isSelected,
-                    onClick = onSelect
-                )
+                .selectable(selected = isSelected, onClick = onSelect)
         }
 
         Card(
             modifier = cardModifier,
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = item?.color ?: Color(0xFFE2E8F0)
-            ),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF96CEB4)),
             elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 4.dp)
         ) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                if (item == null) {
-                    // "None" option
-                    Text(
-                        text = "None",
-                        color = Color(0xFF4A5568),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                } else {
-                    when (item.category) {
-                        "Frames" -> {
-                            // Frame preview - border design
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(12.dp)
-                                    .background(
-                                        Color.White.copy(alpha = 0.9f),
-                                        RoundedCornerShape(8.dp)
-                                    )
-                            )
-                        }
-                        "Titles" -> {
-                            // Title preview - text
-                            Text(
-                                text = item.name,
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        "Themes" -> {
-                            // Theme preview - color blocks
-                            Text(
-                                text = item.name,
-                                color = Color.White,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
+                Text(
+                    text = item?.name ?: "None",
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = item?.name ?: "None",
+            fontSize = 12.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            color = if (isSelected) Color(0xFF667EEA) else Color(0xFF4A5568)
+        )
+    }
+}
 
-        // Item name
+@Composable
+fun ThemeCustomizationSection(
+    title: String,
+    items: List<CustomizationItem>,
+    selectedItemId: String?,
+    onItemSelect: (String?) -> Unit,
+    emptyMessage: String
+) {
+    Column(modifier = Modifier.padding(20.dp)) {
+        Text(
+            text = title,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color(0xFF4A5568),
+            modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
+        )
+
+        if (items.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "No themes owned",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF4A5568)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = emptyMessage,
+                        fontSize = 14.sp,
+                        color = Color(0xFF718096)
+                    )
+                }
+            }
+        } else {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
+            ) {
+                item {
+                    SelectableThemeCard(
+                        item = null,
+                        isSelected = selectedItemId == null,
+                        onSelect = { onItemSelect(null) }
+                    )
+                }
+
+                items(items) { item ->
+                    SelectableThemeCard(
+                        item = item,
+                        isSelected = selectedItemId == item.id,
+                        onSelect = { onItemSelect(item.id) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SelectableThemeCard(
+    item: CustomizationItem?,
+    isSelected: Boolean,
+    onSelect: () -> Unit
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        val cardModifier = if (isSelected) {
+            Modifier
+                .size(100.dp)
+                .selectable(selected = isSelected, onClick = onSelect)
+                .border(3.dp, Color(0xFF667EEA), RoundedCornerShape(12.dp))
+        } else {
+            Modifier
+                .size(100.dp)
+                .selectable(selected = isSelected, onClick = onSelect)
+        }
+
+        Card(
+            modifier = cardModifier,
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF4A90E2)),
+            elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 4.dp)
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = item?.name ?: "None",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = item?.name ?: "None",
             fontSize = 12.sp,

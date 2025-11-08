@@ -27,6 +27,7 @@ import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.contentColorFor
 import androidx.compose.ui.zIndex
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.text.style.TextAlign
 import com.example.overpowered.auth.PhoneAuthScreen
 import com.example.overpowered.auth.VerificationCodeScreen
@@ -34,6 +35,7 @@ import com.example.overpowered.viewmodel.PhoneAuthState
 import com.example.overpowered.onboarding.OnboardingScreen
 import com.example.overpowered.profile.ProfileScreen
 import com.example.overpowered.profile.components.EditProfileScreen
+import com.example.overpowered.profile.components.FramedProfilePicture
 import com.example.overpowered.profile.components.FriendRequestsDialog
 import com.example.overpowered.progress.ProgressScreen
 import com.example.overpowered.shop.ShopScreen
@@ -244,6 +246,7 @@ fun MainAppContent(
                 showProfile = showProfile,
                 showEditProfile = showEditProfile,
                 profileImageUrl = userProfile.profileImageUrl,
+                selectedFrame = userProfile.selectedFrame,
                 playerMoney = userProfile.playerMoney ?: 100,
                 playerExperience = userProfile.playerExperience ?: 0,
                 notificationCount = pendingFriendRequests.size,
@@ -449,6 +452,7 @@ fun TopStatusBar(
     showProfile: Boolean,
     showEditProfile: Boolean,
     profileImageUrl: String?,
+    selectedFrame: String?,
     playerMoney: Int,
     playerExperience: Int,
     notificationCount: Int,
@@ -521,13 +525,11 @@ fun TopStatusBar(
                             contentAlignment = Alignment.Center
                         ) {
                             if (profileImageUrl != null) {
-                                Image(
-                                    painter = rememberAsyncImagePainter(profileImageUrl),
-                                    contentDescription = "Profile",
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clip(RoundedCornerShape(16.dp)),
-                                    contentScale = ContentScale.Crop
+                                FramedProfilePicture(
+                                    profileImageUrl = profileImageUrl,
+                                    frameId = selectedFrame, // Pass the selected frame ID
+                                    size = 32.dp,
+                                    modifier = Modifier.clickable { onProfileClick() }
                                 )
                             } else {
                                 Icon(

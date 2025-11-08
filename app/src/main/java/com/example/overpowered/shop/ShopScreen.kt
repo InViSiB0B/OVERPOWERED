@@ -17,6 +17,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.overpowered.data.FrameCatalog
+import com.example.overpowered.profile.components.FramedProfilePicture
 import java.util.*
 import kotlin.random.Random
 
@@ -31,16 +33,16 @@ data class ShopItem(
 
 // Catalog of all available items (placeholder still)
 object ShopCatalog {
-    val allFrames = listOf(
-        ShopItem("frame_1", "Autumn", 10, "Frames", Color(0xFFFF6B35)),
-        ShopItem("frame_2", "Confetti", 10, "Frames", Color(0xFF4ECDC4)),
-        ShopItem("frame_3", "Classic", 10, "Frames", Color(0xFF45B7D1)),
-        ShopItem("frame_4", "Sunset", 10, "Frames", Color(0xFFFF9A56)),
-        ShopItem("frame_5", "Ocean", 10, "Frames", Color(0xFF3498DB)),
-        ShopItem("frame_6", "Forest", 10, "Frames", Color(0xFF27AE60)),
-        ShopItem("frame_7", "Midnight", 10, "Frames", Color(0xFF2C3E50)),
-        ShopItem("frame_8", "Rose Gold", 10, "Frames", Color(0xFFE91E63)),
-    )
+    val allFrames = FrameCatalog.getAllFrames().map { frame ->
+        ShopItem(
+            id = frame.id,
+            name = frame.name,
+            price = frame.price,
+            category = "Frames",
+            color = Color(0xFF667EEA), // Preview color
+            description = ""
+        )
+    }
 
     val allTitles = listOf(
         ShopItem("title_1", "Overpowered", 5, "Titles", Color(0xFF96CEB4)),
@@ -284,7 +286,8 @@ fun ShopItemCard(
     val canAfford = playerMoney >= item.price
 
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // Item preview card
         Card(
@@ -299,15 +302,12 @@ fun ShopItemCard(
             ) {
                 when (item.category) {
                     "Frames" -> {
-                        // Frame preview - border design
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(12.dp)
-                                .background(
-                                    Color.White.copy(alpha = 0.9f),
-                                    RoundedCornerShape(8.dp)
-                                )
+                        // Show actual frame preview
+                        FramedProfilePicture(
+                            profileImageUrl = null,
+                            frameId = item.id,
+                            size = 80.dp,
+                            iconSize = 40.dp
                         )
                     }
                     "Titles" -> {
@@ -332,7 +332,13 @@ fun ShopItemCard(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = item.name,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF4A5568),
+            textAlign = TextAlign.Center
+        )
 
         // Price button
         Button(

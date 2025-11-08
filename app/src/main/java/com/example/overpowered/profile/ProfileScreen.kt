@@ -24,6 +24,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import com.example.overpowered.data.Friendship
 import com.example.overpowered.data.UserProfile
+import com.example.overpowered.profile.components.FramedProfilePicture
 
 @Composable
 fun ProfileScreen(
@@ -115,13 +116,10 @@ fun ProfileScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (profileImageUrl != null) {
-                    Image(
-                        painter = rememberAsyncImagePainter(profileImageUrl),
-                        contentDescription = "Profile Picture",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(60.dp)),
-                        contentScale = ContentScale.Crop
+                    FramedProfilePicture(
+                        profileImageUrl = profileImageUrl,
+                        frameId = userProfile.selectedFrame,
+                        size = 120.dp
                     )
                 } else {
                     Icon(
