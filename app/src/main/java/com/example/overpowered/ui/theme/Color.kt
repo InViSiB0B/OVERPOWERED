@@ -35,13 +35,13 @@ val LightGray  = Color(0xFFDDDDDD)
 val PureWhite  = OP_White
 val OffWhite   = OP_Slate_100
 val DarkSurface= Color(0xFF253140)
-val OnDark     = Color(0xFFE9EEF6)
+val OnDark     = OP_BabyBlue
 
 // ================== LIGHT SCHEME ==================
 val LightColors = lightColorScheme(
     primary            = OP_Teal_500,
     onPrimary          = OP_White,
-    primaryContainer   = OP_Teal_100,
+    primaryContainer   = OP_Teal_500,
     onPrimaryContainer = OP_Slate_900,
 
 
@@ -73,7 +73,7 @@ val LightColors = lightColorScheme(
 
 // ================== DARK SCHEME ==================
 val DarkColors = darkColorScheme(
-    primary            = OP_BabyBlue, // softer pop on dark
+    primary            = OP_SlateBlue, // softer pop on dark
     onPrimary          = OP_Slate_800,
     primaryContainer   = OP_Teal_900,
     onPrimaryContainer = OP_Teal_100,
@@ -88,8 +88,8 @@ val DarkColors = darkColorScheme(
     tertiaryContainer  = Color(0xFF2A3647),
     onTertiaryContainer = OnDark,
 
-    background         = OP_Slate_800,
-    onBackground       = OnDark,
+    background         = OP_Slate_600,
+    onBackground       = OP_Slate_300,
 
     surface            = Color(0xFF121824),
     onSurface          = OnDark,

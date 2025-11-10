@@ -14,8 +14,7 @@ import com.example.overpowered.navigation.components.ErrorScreen
 import com.example.overpowered.navigation.components.LoadingScreen
 import com.example.overpowered.viewmodel.AppViewModel
 import com.example.overpowered.viewmodel.PhoneAuthState
-import androidx.compose.ui.res.painterResource
-import com.example.overpowered.ui.theme.AppIcons
+
 
 
 @Composable
