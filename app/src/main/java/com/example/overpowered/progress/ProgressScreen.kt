@@ -46,7 +46,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.example.overpowered.data.GoalSize
 import com.example.overpowered.data.LongTermGoal
 import com.example.overpowered.progress.components.StreakCalculator
-import com.example.overpowered.profile.components.FramedProfilePicture
 
 // ---------- UI models  ----------
 data class PlayerStats(
@@ -77,7 +76,6 @@ data class LeaderboardEntry(
     val userId: String,
     val playerName: String,
     val profileImageUrl: String?,
-    val selectedFrame: String?,
     val level: Int,
     val tasksCompleted: Int,
     val rank: Int
@@ -124,6 +122,10 @@ fun ProgressScreen(
     val playerStats: PlayerStats = userProfile.toPlayerStatsForProgress()
     val taskHistoryItems: List<TaskHistoryItem> = completedTasks.map { it.toHistoryItem() }
 
+    val dailyStreak = remember(taskHistoryItems) {
+        StreakCalculator.computeDailyStreak(taskHistoryItems)
+    }
+
     // ---------- UI ----------
     LazyColumn(
         modifier = Modifier
@@ -133,7 +135,7 @@ fun ProgressScreen(
     ) {
         // Stats card
         item {
-            StatsSummaryCard(playerStats)
+            StatsSummaryCard(stats = playerStats, dailyStreak = dailyStreak)
         }
         item {
             LongTermGoalsSection(
@@ -197,9 +199,9 @@ private fun FirebaseTask.toHistoryItem(): TaskHistoryItem {
 
 // ---------- Cards ----------
 @Composable
-fun StatsSummaryCard(stats: PlayerStats) {
+fun StatsSummaryCard(stats: PlayerStats, dailyStreak: Int) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -212,25 +214,25 @@ fun StatsSummaryCard(stats: PlayerStats) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                StatPill(Icons.Filled.PlayArrow, "EXP",  stats.exp.toString(),  MaterialTheme.colorScheme.primary)
-                StatPill(Icons.Filled.Star,      "LVL",  stats.level.toString(), MaterialTheme.colorScheme.secondary)
-                StatPill(Icons.Filled.ShoppingCart, "Gold", stats.gold.toString(), MaterialTheme.colorScheme.tertiary)
-                StatPill(Icons.Filled.Check,      "Streak", dailyStreak.toString(), MaterialTheme.colorScheme.error)
+                StatPill(Icons.Filled.PlayArrow, "EXP",  stats.exp.toString(),  Color(0xFF667EEA))
+                StatPill(Icons.Filled.Star,      "LVL",  stats.level.toString(), Color(0xFF38B2AC))
+                StatPill(Icons.Filled.ShoppingCart, "Gold", stats.gold.toString(), Color(0xFFF6AD55))
+                StatPill(Icons.Filled.Check,      "Streak", dailyStreak.toString(), Color(0xFFED64A6))
             }
 
             val progress = (stats.exp.toFloat() / stats.expForNextLevel.toFloat()).coerceIn(0f, 1f)
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Next Level", style = MaterialTheme.typography.bodyMedium)
                 LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier.fillMaxWidth().height(10.dp),
-                color = ProgressIndicatorDefaults.linearColor,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth().height(10.dp),
+                    color = ProgressIndicatorDefaults.linearColor,
+                    trackColor = Color(0xFFE2E8F0),
+                    strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
                 )
                 Text("${stats.exp} / ${stats.expForNextLevel} XP",
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onBackground)
+                    color = Color(0xFF4A5568))
             }
         }
     }
@@ -244,13 +246,15 @@ private fun StatPill(
     tint: Color
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surface,
+        color = Color.White,
         tonalElevation = 2.dp,
         shadowElevation = 2.dp,
         shape = MaterialTheme.shapes.medium
     ) {
         Row(
-            modifier = Modifier.widthIn(min = 96.dp).padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier
+                .wrapContentWidth() // ← was width(96.dp); let it size naturally
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
@@ -259,7 +263,7 @@ private fun StatPill(
                 Text(
                     label,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color(0xFF718096),
                     maxLines = 1,
                     softWrap = false,
                     overflow = TextOverflow.Ellipsis
@@ -279,13 +283,13 @@ private fun StatPill(
 
 @Composable
 fun GoalsCard(goals: List<Goal>) {
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Long-term Goals", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             goals.forEach { goal ->
                 GoalRow(goal)
-                Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                Divider(color = Color(0xFFE2E8F0))
             }
         }
     }
@@ -297,28 +301,28 @@ private fun GoalRow(goal: Goal) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text(goal.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-            Text("${goal.current}/${goal.target} ${goal.unit}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onBackground)
+            Text("${goal.current}/${goal.target} ${goal.unit}", style = MaterialTheme.typography.labelLarge, color = Color(0xFF4A5568))
         }
-        LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().height(10.dp), trackColor = MaterialTheme.colorScheme.surfaceVariant)
+        LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth().height(10.dp), trackColor = Color(0xFFE2E8F0))
     }
 }
 
 @Composable
 fun TaskHistoryCard(history: List<TaskHistoryItem>) {
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Task History", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
 
             if (history.isEmpty()) {
-                Text("No tasks completed yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("No tasks completed yet.", color = Color(0xFF718096))
             } else {
                 history.forEach { item ->
                     HistoryRow(item)
                     HorizontalDivider(
                         Modifier,
                         DividerDefaults.Thickness,
-                        color = MaterialTheme.colorScheme.outlineVariant
+                        color = Color(0xFFE2E8F0)
                     )
                 }
             }
@@ -331,11 +335,11 @@ private fun HistoryRow(item: TaskHistoryItem) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(item.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-            Text(item.date.toString(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(item.date.toString(), style = MaterialTheme.typography.labelMedium, color = Color(0xFF718096))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("+${item.rewardExp} XP", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-            Text("+${item.rewardGold} $", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.tertiary)
+            Text("+${item.rewardExp} XP", style = MaterialTheme.typography.labelLarge, color = Color(0xFF667EEA))
+            Text("+${item.rewardGold} $", style = MaterialTheme.typography.labelLarge, color = Color(0xFFF6AD55))
         }
     }
 }
@@ -358,7 +362,7 @@ fun LeaderboardCard(
     }
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -413,7 +417,7 @@ fun LeaderboardCard(
                 ) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(32.dp),
-                        color = MaterialTheme.colorScheme.primary
+                        color = Color(0xFF667EEA)
                     )
                 }
             } else if (entries.isEmpty()) {
@@ -432,13 +436,13 @@ fun LeaderboardCard(
                         text = "No friends yet",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = Color(0xFF4A5568)
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Add friends to compete!",
                         fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFF718096)
                     )
                 }
             } else {
@@ -456,7 +460,7 @@ fun LeaderboardCard(
                     if (currentUserEntry != null && currentUserEntry.rank > 10) {
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 8.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant
+                            color = Color(0xFFE2E8F0)
                         )
 
                         Row(
@@ -467,7 +471,7 @@ fun LeaderboardCard(
                                 text = "Your Rank",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = Color(0xFF718096)
                             )
                         }
 
@@ -494,7 +498,7 @@ fun SegmentedButton(
         modifier = modifier
             .height(36.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(Color(0xFFE2E8F0))
     ) {
         options.forEachIndexed { index, option ->
             Box(
@@ -502,7 +506,7 @@ fun SegmentedButton(
                     .weight(1f)
                     .fillMaxHeight()
                     .background(
-                        if (selectedIndex == index) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        if (selectedIndex == index) Color(0xFF667EEA) else Color.Transparent,
                         RoundedCornerShape(8.dp)
                     )
                     .clickable { onSelectionChange(index) },
@@ -512,7 +516,7 @@ fun SegmentedButton(
                     text = option,
                     fontSize = 12.sp,
                     fontWeight = if (selectedIndex == index) FontWeight.Bold else FontWeight.Medium,
-                    color = if (selectedIndex == index) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (selectedIndex == index) Color.White else Color(0xFF4A5568)
                 )
             }
         }
@@ -529,7 +533,7 @@ fun LeaderboardEntryRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                if (isCurrentUser) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent,
+                if (isCurrentUser) Color(0xFF667EEA).copy(alpha = 0.1f) else Color.Transparent,
                 RoundedCornerShape(8.dp)
             )
             .padding(horizontal = 8.dp, vertical = 8.dp),
@@ -545,7 +549,7 @@ fun LeaderboardEntryRow(
                         1 -> Color(0xFFFFD700) // Gold
                         2 -> Color(0xFFC0C0C0) // Silver
                         3 -> Color(0xFFCD7F32) // Bronze
-                        else -> MaterialTheme.colorScheme.surfaceVariant
+                        else -> Color(0xFFE2E8F0)
                     },
                     CircleShape
                 ),
@@ -555,7 +559,7 @@ fun LeaderboardEntryRow(
                 text = entry.rank.toString(),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (entry.rank <= 3) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (entry.rank <= 3) Color.White else Color(0xFF4A5568)
             )
         }
 
@@ -563,23 +567,26 @@ fun LeaderboardEntryRow(
         Card(
             modifier = Modifier.size(36.dp),
             shape = CircleShape,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF667EEA))
         ) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 if (entry.profileImageUrl != null) {
-                    FramedProfilePicture(
-                        profileImageUrl = entry.profileImageUrl,
-                        frameId = entry.selectedFrame, // You'll need to add this to LeaderboardEntry
-                        size = 36.dp
+                    Image(
+                        painter = rememberAsyncImagePainter(entry.profileImageUrl),
+                        contentDescription = "Profile",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
                     )
                 } else {
                     Icon(
                         Icons.Filled.Person,
                         contentDescription = "Profile",
-                        tint = MaterialTheme.colorScheme.onPrimary,
+                        tint = Color.White,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -591,7 +598,7 @@ fun LeaderboardEntryRow(
             text = entry.playerName,
             fontSize = 14.sp,
             fontWeight = if (isCurrentUser) FontWeight.Bold else FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = Color(0xFF4A5568),
             modifier = Modifier.weight(1f)
         )
 
@@ -600,51 +607,51 @@ fun LeaderboardEntryRow(
             text = if (showLevel) "Lv ${entry.level}" else "${entry.tasksCompleted} tasks",
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            color = Color(0xFF667EEA)
         )
     }
 }
 
 // ---------- Lightweight placeholders (commented as non-basic) ----------
 @Composable private fun LoadingStatsCard() {
-    // Non-basic: skeleton shimmer is nicer; this is a minimal placeholder
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+    // Non-basic: skeleton shimmer is nicer; this is a minimal placeholders
+    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC))) {
         Column(Modifier.padding(16.dp)) {
             Text("Progress Overview", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(10.dp))
             Spacer(Modifier.height(8.dp))
-            Text("Loading stats…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Loading stats…", color = Color(0xFF718096))
         }
     }
 }
 @Composable private fun ErrorStatsCard() {
     // Non-basic: add retry action, analytics, etc.
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF5F5))) {
         Column(Modifier.padding(16.dp)) {
             Text("Progress Overview", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
-            Text("Couldn’t load stats.", color = MaterialTheme.colorScheme.onErrorContainer)
+            Text("Couldn’t load stats.", color = Color(0xFFB00020))
         }
     }
 }
 @Composable private fun LoadingHistoryCard() {
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC))) {
         Column(Modifier.padding(16.dp)) {
             Text("Task History", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(10.dp))
             Spacer(Modifier.height(8.dp))
-            Text("Loading history…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Loading history…", color = Color(0xFF718096))
         }
     }
 }
 @Composable private fun ErrorHistoryCard() {
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF5F5))) {
         Column(Modifier.padding(16.dp)) {
             Text("Task History", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
-            Text("Couldn’t load history.", color = MaterialTheme.colorScheme.onErrorContainer)
+            Text("Couldn’t load history.", color = Color(0xFFB00020))
         }
     }
 }
@@ -669,19 +676,19 @@ fun LongTermGoalsSection(
                 text = "Goals",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
+                color = Color(0xFF4A5568)
             )
 
             IconButton(
                 onClick = { showCreateDialog = true },
                 colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = Color(0xFF667EEA)
                 )
             ) {
                 Icon(
                     imageVector = Icons.Filled.Add,
                     contentDescription = "Add Goal",
-                    tint = MaterialTheme.colorScheme.onPrimary
+                    tint = Color.White
                 )
             }
         }
@@ -722,7 +729,7 @@ fun EmptyGoalsState(onCreateClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC))
     ) {
         Column(
             modifier = Modifier
@@ -739,21 +746,21 @@ fun EmptyGoalsState(onCreateClick: () -> Unit) {
                 text = "No Goals Yet",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = Color(0xFF4A5568),
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Create a goal and complete tasks with matching tags to track your progress!",
                 fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color(0xFF718096),
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = onCreateClick,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = Color(0xFF667EEA)
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -781,7 +788,7 @@ fun LongTermGoalCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -801,13 +808,13 @@ fun LongTermGoalCard(
                         text = goal.name,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = Color(0xFF4A5568)
                     )
                     goal.description?.let {
                         Text(
                             text = it,
                             fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = Color(0xFF718096),
                             modifier = Modifier.padding(top = 4.dp)
                         )
                     }
@@ -816,8 +823,8 @@ fun LongTermGoalCard(
                 IconButton(
                     onClick = onDelete,
                     colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        containerColor = Color(0xFFFED7D7),
+                        contentColor = Color(0xFFE53E3E)
                     ),
                     modifier = Modifier.size(32.dp)
                 ) {
@@ -840,14 +847,14 @@ fun LongTermGoalCard(
                     goal.tags.forEach { tag ->
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                            color = Color(0xFF667EEA).copy(alpha = 0.1f)
                         ) {
                             Text(
                                 text = tag,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.primary
+                                color = Color(0xFF667EEA)
                             )
                         }
                     }
@@ -867,24 +874,24 @@ fun LongTermGoalCard(
                         text = "${goal.currentPoints} / ${goal.targetPoints} points",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = Color(0xFF4A5568)
                     )
                     Text(
                         text = "${(progress * 100).toInt()}%",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = Color(0xFF667EEA)
                     )
                 }
 
                 LinearProgressIndicator(
-                    progress = { progress },
+                    progress = progress,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(12.dp)
                         .clip(RoundedCornerShape(6.dp)),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    color = Color(0xFF667EEA),
+                    trackColor = Color(0xFFE2E8F0)
                 )
             }
 
@@ -897,13 +904,13 @@ fun LongTermGoalCard(
                     Text(
                         text = "${config.displayName} Goal",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFF718096)
                     )
                     Text(
                         text = "$weeksElapsed / ${goal.totalWeeks} weeks",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = Color(0xFF4A5568)
                     )
                 }
 
@@ -911,20 +918,20 @@ fun LongTermGoalCard(
                     Text(
                         text = "Rewards",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFF718096)
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
                             text = "+${goal.rewardXP} XP",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.primary
+                            color = Color(0xFFED8936)
                         )
                         Text(
                             text = "+$${goal.rewardMoney}",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.tertiary
+                            color = Color(0xFF48BB78)
                         )
                     }
                 }
@@ -945,7 +952,7 @@ fun CreateGoalDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = Color.White,
         shape = RoundedCornerShape(20.dp),
         title = {
             Column {
@@ -953,12 +960,12 @@ fun CreateGoalDialog(
                     text = "Create Goal",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = Color(0xFF4A5568)
                 )
                 Text(
                     text = "Track progress by completing tasks with matching tags",
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color(0xFF718096),
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -979,8 +986,8 @@ fun CreateGoalDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        focusedBorderColor = Color(0xFF667EEA),
+                        unfocusedBorderColor = Color(0xFFE2E8F0)
                     )
                 )
 
@@ -994,8 +1001,8 @@ fun CreateGoalDialog(
                     minLines = 2,
                     maxLines = 3,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        focusedBorderColor = Color(0xFF667EEA),
+                        unfocusedBorderColor = Color(0xFFE2E8F0)
                     )
                 )
 
@@ -1011,12 +1018,12 @@ fun CreateGoalDialog(
                         Text(
                             "Tasks with these tags will count toward this goal",
                             fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = Color(0xFF718096)
                         )
                     },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        focusedBorderColor = Color(0xFF667EEA),
+                        unfocusedBorderColor = Color(0xFFE2E8F0)
                     )
                 )
 
@@ -1026,7 +1033,7 @@ fun CreateGoalDialog(
                         text = "Goal Duration",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onBackground,
+                        color = Color(0xFF4A5568),
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
@@ -1065,7 +1072,7 @@ fun CreateGoalDialog(
                 },
                 enabled = goalName.isNotBlank() && goalTags.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = Color(0xFF667EEA)
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -1076,7 +1083,7 @@ fun CreateGoalDialog(
             TextButton(
                 onClick = onDismiss,
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    contentColor = Color(0xFF718096)
                 )
             ) {
                 Text("Cancel")
@@ -1099,9 +1106,9 @@ fun GoalSizeOption(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (isSelected) Color(0xFF667EEA).copy(alpha = 0.1f) else Color(0xFFF7FAFC)
         ),
-        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+        border = if (isSelected) BorderStroke(2.dp, Color(0xFF667EEA)) else null
     ) {
         Row(
             modifier = Modifier
@@ -1115,18 +1122,18 @@ fun GoalSizeOption(
                     text = config.displayName,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
+                    color = if (isSelected) Color(0xFF667EEA) else Color(0xFF4A5568)
                 )
                 Text(
                     text = "${config.weeks} weeks • ${config.points} points",
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color(0xFF718096),
                     modifier = Modifier.padding(top = 2.dp)
                 )
                 Text(
                     text = "Rewards: ${config.rewardXP} XP, $${config.rewardMoney}",
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color(0xFF718096),
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }
@@ -1135,10 +1142,9 @@ fun GoalSizeOption(
                 selected = isSelected,
                 onClick = onClick,
                 colors = RadioButtonDefaults.colors(
-                    selectedColor = MaterialTheme.colorScheme.primary
+                    selectedColor = Color(0xFF667EEA)
                 )
             )
         }
     }
 }
-
