@@ -4,6 +4,14 @@ import android.app.Activity
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.rememberAsyncImagePainter
+import androidx.compose.material3.BottomAppBarDefaults
+import androidx.compose.material3.contentColorFor
+import androidx.compose.ui.zIndex
+import androidx.compose.foundation.background
+import androidx.compose.ui.text.style.TextAlign
 import com.example.overpowered.auth.PhoneAuthScreen
 import com.example.overpowered.auth.VerificationCodeScreen
 import com.example.overpowered.navigation.components.ErrorScreen
@@ -11,6 +19,7 @@ import com.example.overpowered.navigation.components.LoadingScreen
 import com.example.overpowered.navigation.components.MainAppScaffold
 import com.example.overpowered.onboarding.OnboardingScreen
 import com.example.overpowered.navigation.components.ErrorScreen
+import com.example.overpowered.profile.components.FramedProfilePicture
 import com.example.overpowered.navigation.components.LoadingScreen
 import com.example.overpowered.viewmodel.AppViewModel
 import com.example.overpowered.viewmodel.PhoneAuthState

@@ -893,6 +893,8 @@ class FirebaseRepository {
             val friendRequest = mapOf(
                 "fromUserId" to userId,
                 "fromUserName" to "${currentUserProfile.playerName}#${currentUserProfile.discriminator}",
+                "fromProfileImageUrl" to currentUserProfile.profileImageUrl,
+                "fromSelectedFrame" to currentUserProfile.selectedFrame,
                 "toUserId" to targetUser.userId,
                 "toUserName" to "${targetUser.playerName}#${targetUser.discriminator}",
                 "status" to "pending",
