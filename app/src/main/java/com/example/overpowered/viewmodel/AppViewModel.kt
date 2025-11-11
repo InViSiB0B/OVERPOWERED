@@ -656,7 +656,7 @@ class AppViewModel : ViewModel() {
             _isLoadingLeaderboard.value = true
 
             try {
-                // Get friend IDs
+                // Get friend IDss
                 val friendIds = _friends.value.map { it.friendId }
 
                 if (friendIds.isEmpty()) {
