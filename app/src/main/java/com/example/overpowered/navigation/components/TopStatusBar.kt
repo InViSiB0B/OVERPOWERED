@@ -1,6 +1,7 @@
 package com.example.overpowered.navigation.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
+import com.example.overpowered.profile.components.FramedProfilePicture
 import com.example.overpowered.ui.theme.AppIcons
 
 
@@ -28,6 +30,7 @@ fun TopStatusBar(
     showProfile: Boolean,
     showEditProfile: Boolean,
     profileImageUrl: String?,
+    selectedFrame: String?,
     playerMoney: Int,
     playerExperience: Int,
     notificationCount: Int,
@@ -89,13 +92,11 @@ fun TopStatusBar(
                             contentAlignment = Alignment.Center
                         ) {
                             if (profileImageUrl != null) {
-                                Image(
-                                    painter = rememberAsyncImagePainter(profileImageUrl),
-                                    contentDescription = "Profile",
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clip(RoundedCornerShape(16.dp)),
-                                    contentScale = ContentScale.Crop
+                                FramedProfilePicture(
+                                    profileImageUrl = profileImageUrl,
+                                    frameId = selectedFrame, // Pass the selected frame ID
+                                    size = 32.dp,
+                                    modifier = Modifier.clickable { onProfileClick() }
                                 )
                             } else {
                                 Icon(

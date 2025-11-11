@@ -80,6 +80,7 @@ fun MainAppScaffold(
                     showProfile = showProfile,
                     showEditProfile = showEditProfile,
                     profileImageUrl = userProfile.profileImageUrl,
+                    selectedFrame = userProfile.selectedFrame,
                     playerMoney = userProfile.playerMoney ?: 100,
                     playerExperience = userProfile.playerExperience ?: 0,
                     notificationCount = pendingFriendRequests.size,
