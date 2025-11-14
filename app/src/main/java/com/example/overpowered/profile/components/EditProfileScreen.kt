@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -17,12 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.net.Uri
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import coil.compose.rememberAsyncImagePainter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.lazy.LazyRow
@@ -30,10 +24,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
-import com.example.overpowered.profile.components.FramedProfilePicture
 import com.example.overpowered.data.FrameCatalog
 import com.example.overpowered.data.ProfileFrame
-import com.example.overpowered.shop.ShopItem
+import com.example.overpowered.data.Title
+import com.example.overpowered.data.TitleCatalog
 
 @Composable
 fun EditProfileScreen(
@@ -55,12 +49,9 @@ fun EditProfileScreen(
     // Get actual frames from FrameCatalog
     val allFrames = FrameCatalog.getAllFrames()
 
-    // TODO: Replace these with actual title and theme catalogs when created
-    val allTitles = listOf(
-        CustomizationItem("title_1", "Overpowered", "Titles"),
-        CustomizationItem("title_2", "Legendary", "Titles"),
-        CustomizationItem("title_3", "Epic", "Titles")
-    )
+    // Get actual titles from TitleCatalog
+    val allTitles = TitleCatalog.getAllTitles()
+
     val allThemes = listOf(
         CustomizationItem("theme_1", "Ocean", "Themes"),
         CustomizationItem("theme_2", "Flame", "Themes"),
@@ -357,7 +348,7 @@ fun SelectableFrameCard(
 @Composable
 fun TitleCustomizationSection(
     title: String,
-    items: List<CustomizationItem>,
+    items: List<Title>,
     selectedItemId: String?,
     onItemSelect: (String?) -> Unit,
     emptyMessage: String
@@ -422,7 +413,7 @@ fun TitleCustomizationSection(
 
 @Composable
 fun SelectableTitleCard(
-    item: CustomizationItem?,
+    item: Title?,
     isSelected: Boolean,
     onSelect: () -> Unit
 ) {

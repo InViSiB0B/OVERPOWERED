@@ -25,6 +25,7 @@ import androidx.compose.foundation.verticalScroll
 import com.example.overpowered.data.Friendship
 import com.example.overpowered.data.UserProfile
 import com.example.overpowered.profile.components.FramedProfilePicture
+import com.example.overpowered.profile.components.PlayerNameWithTitle
 
 @Composable
 fun ProfileScreen(
@@ -38,6 +39,7 @@ fun ProfileScreen(
     val playerName = userProfile.playerName
     val profileImageUrl = userProfile.profileImageUrl
     val discriminator = userProfile.discriminator
+    val selectedTitle = userProfile.selectedTitle
     // Calculate player level based on experience (super placeholder right now: level = experience / 100 + 1)
     val playerLevel = (playerExperience / 100) + 1
 
@@ -133,11 +135,12 @@ fun ProfileScreen(
         }
 
         // User info
-        Text(
-            text = "$playerName#${userProfile.discriminator}",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF4A5568)
+        PlayerNameWithTitle(
+            playerName = playerName,
+            discriminator = discriminator,
+            titleId = selectedTitle,
+            nameSize = 24.sp,
+            titleSize = 16.sp
         )
 
         // Stats section

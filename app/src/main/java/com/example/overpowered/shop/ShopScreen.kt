@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.overpowered.data.FrameCatalog
 import com.example.overpowered.profile.components.FramedProfilePicture
+import com.example.overpowered.data.TitleCatalog
+import com.example.overpowered.profile.components.StyledTitle
 import java.util.*
 import kotlin.random.Random
 
@@ -44,16 +46,16 @@ object ShopCatalog {
         )
     }
 
-    val allTitles = listOf(
-        ShopItem("title_1", "Overpowered", 5, "Titles", Color(0xFF96CEB4)),
-        ShopItem("title_2", "Legendary", 5, "Titles", Color(0xFFFECB52)),
-        ShopItem("title_3", "Epic", 5, "Titles", Color(0xFFFF6B6B)),
-        ShopItem("title_4", "Master", 5, "Titles", Color(0xFF9B59B6)),
-        ShopItem("title_5", "Champion", 5, "Titles", Color(0xFFF39C12)),
-        ShopItem("title_6", "Elite", 5, "Titles", Color(0xFF1ABC9C)),
-        ShopItem("title_7", "Supreme", 5, "Titles", Color(0xFFE74C3C)),
-        ShopItem("title_8", "Divine", 5, "Titles", Color(0xFFFDD835)),
-    )
+    val allTitles = TitleCatalog.getAllTitles().map { title ->
+        ShopItem(
+            id = title.id,
+            name = title.name,
+            price = title.price,
+            category = "Titles",
+            color = title.color,
+            description = ""
+        )
+    }
 
     val allThemes = listOf(
         ShopItem("theme_1", "Ocean", 15, "Themes", Color(0xFF4A90E2)),
@@ -311,12 +313,11 @@ fun ShopItemCard(
                         )
                     }
                     "Titles" -> {
-                        // Title preview - text
-                        Text(
-                            text = item.name,
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
+                        // Title preview with actual styling
+                        StyledTitle(
+                            titleId = item.id,
+                            fontSize = 14.sp,
+                            includeBackground = false
                         )
                     }
                     "Themes" -> {
