@@ -295,7 +295,12 @@ fun ShopItemCard(
         Card(
             modifier = Modifier.size(100.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = item.color),
+            colors = CardDefaults.cardColors(
+                containerColor = when (item.category) {
+                    "Titles" -> Color(0xFF2D3748) // Dark neutral background for titles
+                    else -> item.color
+                }
+            ),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Box(
