@@ -656,7 +656,7 @@ class AppViewModel : ViewModel() {
             _isLoadingLeaderboard.value = true
 
             try {
-                // Get friend IDss
+                // Get friend IDs
                 val friendIds = _friends.value.map { it.friendId }
 
                 if (friendIds.isEmpty()) {
@@ -689,6 +689,7 @@ class AppViewModel : ViewModel() {
                         playerName = profile.playerName,
                         profileImageUrl = profile.profileImageUrl,
                         selectedFrame = profile.selectedFrame,
+                        selectedTitle = profile.selectedTitle,
                         level = profile.playerLevel,
                         tasksCompleted = taskCounts[profile.userId] ?: 0,
                         rank = 0 // Will be assigned after sorting

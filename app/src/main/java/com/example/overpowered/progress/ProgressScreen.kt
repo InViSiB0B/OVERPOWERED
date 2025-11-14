@@ -47,6 +47,7 @@ import com.example.overpowered.data.GoalSize
 import com.example.overpowered.data.LongTermGoal
 import com.example.overpowered.progress.components.StreakCalculator
 import com.example.overpowered.profile.components.FramedProfilePicture
+import com.example.overpowered.profile.components.CompactPlayerNameWithTitle
 
 // ---------- UI models  ----------
 data class PlayerStats(
@@ -78,6 +79,7 @@ data class LeaderboardEntry(
     val playerName: String,
     val profileImageUrl: String?,
     val selectedFrame: String?,
+    val selectedTitle: String?,
     val level: Int,
     val tasksCompleted: Int,
     val rank: Int
@@ -576,7 +578,7 @@ fun LeaderboardEntryRow(
                 if (entry.profileImageUrl != null) {
                     FramedProfilePicture(
                         profileImageUrl = entry.profileImageUrl,
-                        frameId = entry.selectedFrame, // You'll need to add this to LeaderboardEntry
+                        frameId = entry.selectedFrame,
                         size = 36.dp
                     )
                 } else {
@@ -590,12 +592,13 @@ fun LeaderboardEntryRow(
             }
         }
 
-        // Name
-        Text(
-            text = entry.playerName,
-            fontSize = 14.sp,
-            fontWeight = if (isCurrentUser) FontWeight.Bold else FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onBackground,
+        // Name + Title
+        CompactPlayerNameWithTitle(
+            playerName = entry.playerName,
+            titleId = entry.selectedTitle,
+            nameSize = 14.sp,
+            titleSize = 12.sp,
+            nameColor = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.weight(1f)
         )
 
