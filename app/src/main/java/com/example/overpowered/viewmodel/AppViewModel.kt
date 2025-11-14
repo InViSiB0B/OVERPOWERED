@@ -692,7 +692,7 @@ class AppViewModel : ViewModel() {
                         selectedTitle = profile.selectedTitle,
                         level = profile.playerLevel,
                         tasksCompleted = taskCounts[profile.userId] ?: 0,
-                        rank = 0 // Will be assigned after sorting
+                        rank = 0 // Will be assigned after sorting.
                     )
                 }
 
