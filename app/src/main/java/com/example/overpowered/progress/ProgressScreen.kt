@@ -984,10 +984,10 @@ fun CreateGoalDialog(
     initialGoal: LongTermGoal? = null,
     isEditMode: Boolean = false
 ) {
-    var goalName by remember { mutableStateOf("") }
-    var goalDescription by remember { mutableStateOf("") }
-    var goalTags by remember { mutableStateOf(initialGoal?.tags?.joinToString(", ") ?: "") }
-    var selectedSize by remember { mutableStateOf(GoalSize.SHORT) }
+    var goalName by remember(initialGoal) { mutableStateOf(initialGoal?.name ?: "") }
+    var goalDescription by remember(initialGoal) { mutableStateOf(initialGoal?.description ?: "") }
+    var goalTags by remember(initialGoal) { mutableStateOf(initialGoal?.tags?.joinToString(", ") ?: "") }
+    var selectedSize by remember(initialGoal) { mutableStateOf(initialGoal?.size ?: GoalSize.SHORT) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
