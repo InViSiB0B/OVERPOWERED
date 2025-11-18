@@ -714,7 +714,7 @@ class AppViewModel : ViewModel() {
                         _error.value = "Failed to update goal: ${result.exception.message}"
                     }
                     else -> {
-                        // Success - update local state
+                        // Successs - update local state
                         val updatedGoal = goal.copy(
                             name = name,
                             description = description,
