@@ -32,7 +32,7 @@ fun FriendRequestsDialog(
         shape = RoundedCornerShape(20.dp),
         title = {
             Text(
-                text = "Friend Requests",
+                text = "Notifications",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF4A5568)
@@ -47,12 +47,12 @@ fun FriendRequestsDialog(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "👥",
+                        text = "\uD83D\uDD14",
                         fontSize = 48.sp
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "No Friend Requests",
+                        text = "No Notifications",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFF4A5568),
@@ -60,7 +60,7 @@ fun FriendRequestsDialog(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "When someone sends you a friend request, it will appear here.",
+                        text = "When something of note happens, it will appear here.",
                         fontSize = 14.sp,
                         color = Color(0xFF718096),
                         textAlign = TextAlign.Center

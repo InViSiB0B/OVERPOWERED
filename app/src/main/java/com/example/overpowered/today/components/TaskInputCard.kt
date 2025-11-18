@@ -38,8 +38,8 @@ fun TaskInputCard(
     onRecurringChange: (Boolean) -> Unit,
     recurrenceType: RecurrenceType?,
     onRecurrenceTypeChange: (RecurrenceType?) -> Unit,
-
-    onSubmit: () -> Unit
+    onSubmit: () -> Unit,
+    submitButtonText: String = "Add Task"
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
 
@@ -141,7 +141,7 @@ fun TaskInputCard(
             ),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Add Task")
+            Text(submitButtonText)
         }
     }
 

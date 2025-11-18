@@ -168,6 +168,9 @@ fun MainAppScaffold(
                                         recurrenceType
                                     )
                                 },
+                                onUpdateTask = { task, title, desc, tags, dueDate, isRecurring, recurrenceType ->
+                                    viewModel.updateTask(task, title, desc, tags, dueDate, isRecurring, recurrenceType)
+                                },
                                 onCompleteTask = { task ->
                                     val firebaseTask = viewModel.findFirebaseTaskById(task.id)
                                     firebaseTask?.let {
