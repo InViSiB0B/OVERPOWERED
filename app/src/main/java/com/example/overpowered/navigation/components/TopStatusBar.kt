@@ -94,7 +94,7 @@ fun TopStatusBar(
                             if (profileImageUrl != null) {
                                 FramedProfilePicture(
                                     profileImageUrl = profileImageUrl,
-                                    frameId = selectedFrame, // Pass the selected frame ID
+                                    frameId = selectedFrame, // Pass the selected frame IDs
                                     size = 32.dp,
                                     modifier = Modifier.clickable { onProfileClick() }
                                 )
