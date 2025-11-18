@@ -22,7 +22,7 @@ fun DateBadge(dueMillis: Long, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.secondary,
+        color = MaterialTheme.colorScheme.secondaryContainer,
         tonalElevation = 2.dp,
         shadowElevation = 2.dp
     ) {
@@ -31,8 +31,8 @@ fun DateBadge(dueMillis: Long, modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(month, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
-            Text(day, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Text(month, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+            Text(day, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
         }
     }
 }

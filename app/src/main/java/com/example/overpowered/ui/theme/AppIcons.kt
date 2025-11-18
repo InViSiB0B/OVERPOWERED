@@ -8,7 +8,8 @@ import com.example.overpowered.R
  */
 object AppIcons {
     val Logo = R.drawable.logo
-    val Task = R.drawable.task_icon
+    val TextLogo = R.drawable.textlogo
+    val Task = R.drawable.logo
     val Progress = R.drawable.progress_icon
     val Shop = R.drawable.shop_icon
     val XP = R.drawable.xp_icon

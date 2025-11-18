@@ -166,7 +166,7 @@ fun ShopScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Column(
                         modifier = Modifier.padding(32.dp),
@@ -181,14 +181,14 @@ fun ShopScreen(
                             text = "All Items Purchased!",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF4A5568),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "You've bought everything in the shop. Check back later for new items!",
                             fontSize = 14.sp,
-                            color = Color(0xFF718096),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
                         )
                     }
@@ -207,7 +207,7 @@ fun ShopHeader() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF667EEA))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -259,7 +259,7 @@ fun ShopCategory(
             text = title,
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF4A5568),
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
         )
 
@@ -297,7 +297,7 @@ fun ShopItemCard(
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(
                 containerColor = when (item.category) {
-                    "Titles" -> Color(0xFF2D3748) // Dark neutral background for titles
+                    "Titles" -> MaterialTheme.colorScheme.surfaceVariant // Dark neutral background for titles
                     else -> item.color
                 }
             ),
@@ -342,7 +342,7 @@ fun ShopItemCard(
             text = item.name,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF4A5568),
+            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
 
@@ -356,7 +356,7 @@ fun ShopItemCard(
                 }
             },
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (canAfford) Color(0xFFE2E8F0) else Color(0xFFE2E8F0).copy(alpha = 0.6f)
+                containerColor = if (canAfford) MaterialTheme.colorScheme.secondary else Color(0xFFE2E8F0).copy(alpha = 0.6f)
             ),
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier

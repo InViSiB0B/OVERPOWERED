@@ -1,12 +1,15 @@
 package com.example.overpowered.navigation.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -18,12 +21,14 @@ import coil.compose.rememberAsyncImagePainter
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
 import com.example.overpowered.profile.components.FramedProfilePicture
 import com.example.overpowered.ui.theme.AppIcons
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopStatusBar(
     currentTab: Tab,
@@ -38,124 +43,123 @@ fun TopStatusBar(
     onNotificationClick: () -> Unit
 ) {
     val playerLevel = (playerExperience / 100) + 1
+    val topBarBrush = Brush.verticalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.primaryContainer,
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+        )
+    )
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(112.dp),
+            .height(112.dp)
+            .background(topBarBrush),
         shape = RectangleShape,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = Color.Transparent
         )
     ) {
-        Box(Modifier.fillMaxSize()) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.align(Alignment.Center)
-            ) {
-                Spacer(Modifier.height(48.dp))
-
-                Image(
-                    painter = painterResource(AppIcons.Logo),
-                    contentDescription = "Logo",
-                    modifier = Modifier.size(96.dp),                    contentScale = ContentScale.Fit
-                )
-
-                Spacer(Modifier.height(4.dp))
-            }
-
-            Column(
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+        ) {
+            // Logo
+            Image(
+                painter = painterResource(AppIcons.TextLogo),
+                contentDescription = "Logo",
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(start = 20.dp, top = 32.dp, end = 20.dp, bottom = 12.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Spacer(Modifier.height(12.dp))
+                    .height(48.dp)
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 24.dp),
+                contentScale = ContentScale.Fit
+            )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+            // Left side: Profile + Level
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Card(
+                    modifier = Modifier.size(40.dp),
+                    shape = CircleShape,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.2f)
+                    ),
+                    onClick = onProfileClick,
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f))
                 ) {
-                    // Profile
-                    Card(
-                        modifier = Modifier.size(32.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color.White.copy(alpha = 0.2f)
-                        ),
-                        onClick = onProfileClick
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (profileImageUrl != null) {
-                                FramedProfilePicture(
-                                    profileImageUrl = profileImageUrl,
-                                    frameId = selectedFrame, // Pass the selected frame ID
-                                    size = 32.dp,
-                                    modifier = Modifier.clickable { onProfileClick() }
-                                )
-                            } else {
-                                Icon(
-                                    Icons.Filled.Person,
-                                    contentDescription = "Profile",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
+                        if (profileImageUrl != null) {
+                            FramedProfilePicture(
+                                profileImageUrl = profileImageUrl,
+                                frameId = selectedFrame,
+                                size = 32.dp,
+                                modifier = Modifier.clickable { onProfileClick() }
+                            )
+                        } else {
+                            Icon(
+                                Icons.Filled.Person,
+                                contentDescription = "Profile",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
                     }
+                }
 
-                    NotificationButton(
-                        notificationCount = notificationCount,
-                        onClick = onNotificationClick
+                // LVL Text
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "LVL",
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                    Text(
+                        text = playerLevel.toString(),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
                     )
                 }
+            }
 
-                Spacer(Modifier.height(4.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // LVL
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "LVL",
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = playerLevel.toString(),
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
 
-                    // $
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "$",
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = playerMoney.toString(),
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+            // Right side: Money + Notifications
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Money Text
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "$",
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                    Text(
+                        text = playerMoney.toString(),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
+                NotificationButton(
+                    notificationCount = notificationCount,
+                    onClick = onNotificationClick
+                )
             }
         }
     }
@@ -168,12 +172,14 @@ fun NotificationButton(
 ) {
     Box {
         Card(
-            modifier = Modifier.size(32.dp),
-            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.size(40.dp),
+            shape = CircleShape,
             colors = CardDefaults.cardColors(
-                containerColor = Color.White.copy(alpha = 0.2f)
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.2f)
             ),
-            onClick = onClick
+            onClick = onClick,
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f))
         ) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -182,8 +188,8 @@ fun NotificationButton(
                 Icon(
                     Icons.Filled.Notifications,
                     contentDescription = "Notifications",
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
@@ -193,11 +199,11 @@ fun NotificationButton(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .offset(x = 4.dp, y = (-4).dp),
-                containerColor = Color(0xFFE74C3C)
+                containerColor = MaterialTheme.colorScheme.error
             ) {
                 Text(
                     text = if (notificationCount > 9) "9+" else notificationCount.toString(),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onError,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold
                 )

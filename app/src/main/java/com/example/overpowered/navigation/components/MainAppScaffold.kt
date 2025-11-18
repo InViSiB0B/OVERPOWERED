@@ -1,6 +1,7 @@
 package com.example.overpowered.navigation.components
 
-import androidx.compose.foundation.content.MediaType.Companion.Image
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -11,6 +12,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.overpowered.onboarding.OnboardingScreen
@@ -23,12 +26,10 @@ import com.example.overpowered.today.TodayScreen
 import com.example.overpowered.viewmodel.AppViewModel
 import androidx.compose.ui.res.painterResource
 import com.example.overpowered.ui.theme.AppIcons
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.zIndex
-
 
 enum class Tab { Today, Progress, Shop }
 
@@ -90,6 +91,7 @@ fun MainAppScaffold(
             },
             bottomBar = {
                 MainBottomBar(
+                    currentTab = tab,
                     onSelectProgress = {
                         showProfile = false
                         showEditProfile = false
@@ -235,16 +237,42 @@ fun MainAppScaffold(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainBottomBar(
+    currentTab: Tab,
     onSelectProgress: () -> Unit,
     onSelectShop: () -> Unit
 ) {
+    val bottomBarBrush = Brush.verticalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+            MaterialTheme.colorScheme.primaryContainer
+        )
+    )
+
+    val isProgressSelected = currentTab == Tab.Progress
+    val isShopSelected = currentTab == Tab.Shop
+
+    val unselectedBrush = Brush.radialGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f),
+            Color.Transparent
+        )
+    )
+
+    val selectedBrush = Brush.radialGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+            Color.Transparent
+        )
+    )
+
+
     BottomAppBar(
         modifier = Modifier
             .fillMaxWidth()
-            .height(96.dp),
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
-        tonalElevation = 4.dp,
-        // Tighten default padding a bit so it doesn’t feel chunky
+            .height(96.dp)
+            .background(bottomBarBrush),
+        tonalElevation = 0.dp, // We're using a gradient, so explicit elevation is less needed
+        containerColor = Color.Transparent, // Color is handled by the background modifier
         contentPadding = PaddingValues(horizontal = 24.dp)
     ) {
         Spacer(Modifier.weight(0.3f))
@@ -252,15 +280,23 @@ private fun MainBottomBar(
         IconButton(
             onClick = onSelectProgress,
             modifier = Modifier
-                .size(64.dp)
+                .size(72.dp)
                 .offset(y = (-6).dp)
         ) {
-            Image(
-                painter = painterResource(AppIcons.Progress),
-                contentDescription = "Progress",
-                modifier = Modifier.fillMaxSize(0.8f),
-                contentScale = ContentScale.Fit
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .background(if (isProgressSelected) selectedBrush else unselectedBrush),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(AppIcons.Progress),
+                    contentDescription = "Progress",
+                    modifier = Modifier.size(40.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
         }
 
         Spacer(Modifier.weight(1.75f)) // space for center task button
@@ -268,15 +304,23 @@ private fun MainBottomBar(
         IconButton(
             onClick = onSelectShop,
             modifier = Modifier
-                .size(64.dp)
+                .size(72.dp)
                 .offset(y = (-6).dp)
         ) {
-            Image(
-                painter = painterResource(AppIcons.Shop),
-                contentDescription = "Shop",
-                modifier = Modifier.fillMaxSize(0.8f),
-                contentScale = ContentScale.Fit
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .background(if (isShopSelected) selectedBrush else unselectedBrush),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(AppIcons.Shop),
+                    contentDescription = "Shop",
+                    modifier = Modifier.size(40.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
         }
 
         Spacer(Modifier.weight(0.3f))
@@ -297,15 +341,15 @@ private fun CenterTaskButton(
         // Background platform
         Surface(
             onClick = onClick,
-            modifier = Modifier
-                .width(85.dp)
-                .height(100.dp),
+            modifier = Modifier.size(90.dp), // A circular shape looks better with equal size
             color = if (isSelected)
                 MaterialTheme.colorScheme.secondary
             else
                 MaterialTheme.colorScheme.primary,
-            shape = RoundedCornerShape(10.dp),
-            shadowElevation = 12.dp
+            shape = CircleShape,
+            shadowElevation = 12.dp,
+            // Add a subtle border for more definition
+            border = BorderStroke(2.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f))
         ) {}
 
         // Oversized icon that visually overflows into content & bar

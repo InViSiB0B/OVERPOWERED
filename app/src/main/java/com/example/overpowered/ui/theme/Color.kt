@@ -47,7 +47,7 @@ val LightColors = lightColorScheme(
 
     secondary          = OP_Coral,
     onSecondary        = OP_Slate_900,
-    secondaryContainer = OP_Slate_100,
+    secondaryContainer = OP_Coral,
     onSecondaryContainer = OP_Slate_700,
 
     tertiary           = OP_SlateBlue,
