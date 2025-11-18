@@ -26,6 +26,7 @@ import com.example.overpowered.today.components.formatDate
 fun TodayScreen(
     tasks: List<Task> = emptyList(),
     onAddTask: (String, String?, List<String>, Long?, Boolean, String?) -> Unit = { _, _, _, _, _, _ -> },
+    onUpdateTask: (Task, String, String?, List<String>, Long?, Boolean, String?) -> Unit = { _, _, _, _, _, _, _ -> },
     onCompleteTask: (Task) -> Unit = { _ -> },
     onDeleteTask: (Task) -> Unit = { _ -> },
     onDeleteSingleRecurring: (Task) -> Unit = { _ -> },
@@ -43,6 +44,10 @@ fun TodayScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showRewardDialog by remember { mutableStateOf(false) }
     var completedTaskTitle by remember { mutableStateOf("") }
+
+    // Edit mode state
+    var editingTask by remember { mutableStateOf<Task?>(null) }
+    var isEditMode by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -112,14 +117,28 @@ fun TodayScreen(
                             if (taskTitle.isNotBlank()) {
                                 val tags = taskTags.split(",").map { it.trim() }.filter { it.isNotBlank() }
 
-                                onAddTask(
-                                    taskTitle,
-                                    taskDescription.takeIf { it.isNotBlank() },
-                                    tags,
-                                    dueDate,
-                                    isRecurring,
-                                    recurrenceType?.value
-                                )
+                                if (isEditMode && editingTask != null) {
+                                    // Update existing task
+                                    onUpdateTask(
+                                        editingTask!!,
+                                        taskTitle,
+                                        taskDescription.takeIf { it.isNotBlank() },
+                                        tags,
+                                        dueDate,
+                                        isRecurring,
+                                        recurrenceType?.value
+                                    )
+                                } else {
+                                    // Create new task
+                                    onAddTask(
+                                        taskTitle,
+                                        taskDescription.takeIf { it.isNotBlank() },
+                                        tags,
+                                        dueDate,
+                                        isRecurring,
+                                        recurrenceType?.value
+                                    )
+                                }
 
                                 // reset
                                 taskTitle = ""
@@ -128,9 +147,12 @@ fun TodayScreen(
                                 dueDate = null
                                 isRecurring = false
                                 recurrenceType = null
+                                editingTask = null
+                                isEditMode = false
                                 isTaskInputVisible = false
                             }
-                        }
+                        },
+                        submitButtonText = if (isEditMode) "Update Task" else "Add Task"
                     )
                 }
             }
@@ -167,6 +189,18 @@ fun TodayScreen(
                         // Delete immediately for non-recurring
                         onDeleteTask(task)
                     }
+                },
+                onEdit = { task ->
+                    // Populate form with task data
+                    editingTask = task
+                    isEditMode = true
+                    taskTitle = task.title
+                    taskDescription = task.description ?: ""
+                    taskTags = task.tags.joinToString(", ")
+                    dueDate = task.dueDate
+                    isRecurring = task.isRecurring
+                    recurrenceType = task.recurrenceType?.let { RecurrenceType.fromValue(it) }
+                    isTaskInputVisible = true
                 }
             )
         }

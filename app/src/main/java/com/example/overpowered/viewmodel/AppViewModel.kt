@@ -14,6 +14,10 @@ import com.example.overpowered.data.PhoneAuthCallback
 import com.example.overpowered.progress.LeaderboardTimeframe
 import com.example.overpowered.progress.LeaderboardRankingType
 import com.example.overpowered.progress.LeaderboardEntry
+import com.example.overpowered.data.LongTermGoal
+import com.example.overpowered.data.GoalSize
+import com.example.overpowered.data.FirebaseTask
+import com.example.overpowered.data.FirebaseResult
 
 sealed class PhoneAuthState {
     object Initial : PhoneAuthState()
@@ -426,6 +430,52 @@ class AppViewModel : ViewModel() {
         }
     }
 
+    fun updateTask(
+        task: Task,
+        title: String,
+        description: String?,
+        tags: List<String>,
+        dueDate: Long?,
+        isRecurring: Boolean,
+        recurrenceType: String?
+    ) {
+        viewModelScope.launch {
+            try {
+                // Find the corresponding FirebaseTask by matching the local task ID
+                val firebaseTask = _tasks.value.find {
+                    it.id.hashCode().toLong() == task.id
+                }
+
+                if (firebaseTask == null) {
+                    _error.value = "Task not found"
+                    return@launch
+                }
+
+                // Create updates map (filter out null values)
+                val updates = buildMap<String, Any> {
+                    put("title", title)
+                    description?.let { put("description", it) }
+                    put("tags", tags)
+                    dueDate?.let { put("dueDate", it) }
+                    put("isRecurring", isRecurring)
+                    recurrenceType?.let { put("recurrenceType", it) }
+                }
+
+                // Update in Firebase
+                when (val result = repository.updateTask(firebaseTask.id ?: "", updates)) {
+                    is FirebaseResult.Error -> {
+                        _error.value = "Failed to update task: ${result.exception.message}"
+                    }
+                    else -> {
+                        // Success - the observer will automatically update _tasks
+                    }
+                }
+            } catch (e: Exception) {
+                _error.value = "Error updating task: ${e.message}"
+            }
+        }
+    }
+
     fun completeTask(taskId: String?, experienceReward: Int = 10, moneyReward: Int = 10) {
         if (taskId == null) {
             _error.value = "Cannot complete a task with a null ID."
@@ -632,6 +682,59 @@ class AppViewModel : ViewModel() {
                     android.util.Log.e("AppViewModel", "Failed to create long-term goal: ${result.exception.message}")
                 }
                 else -> {}
+            }
+        }
+    }
+
+    fun updateLongTermGoal(
+        goal: LongTermGoal,
+        name: String,
+        description: String?,
+        tags: List<String>,
+        size: String
+    ) {
+        viewModelScope.launch {
+            try {
+                val config = GoalSize.getConfig(size)
+
+                // Build updates map with correct property names
+                val updates = buildMap<String, Any> {
+                    put("name", name)
+                    description?.let { put("description", it) }
+                    put("tags", tags)
+                    put("size", size)
+                    put("targetPoints", config.points)
+                    put("totalWeeks", config.weeks)
+                    put("weeklyTargetPoints", config.points / config.weeks)  // Calculate it
+                }
+
+                // Update in Firebase
+                when (val result = repository.updateLongTermGoal(goal.id, updates)) {
+                    is FirebaseResult.Error -> {
+                        _error.value = "Failed to update goal: ${result.exception.message}"
+                    }
+                    else -> {
+                        // Success - update local state
+                        val updatedGoal = goal.copy(
+                            name = name,
+                            description = description,
+                            tags = tags,
+                            size = size,
+                            targetPoints = config.points,
+                            totalWeeks = config.weeks,
+                            weeklyTargetPoints = config.points / config.weeks
+                        )
+
+                        val currentGoals = _longTermGoals.value.toMutableList()
+                        val index = currentGoals.indexOfFirst { it.id == goal.id }
+                        if (index != -1) {
+                            currentGoals[index] = updatedGoal
+                            _longTermGoals.value = currentGoals
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                _error.value = "Error updating goal: ${e.message}"
             }
         }
     }

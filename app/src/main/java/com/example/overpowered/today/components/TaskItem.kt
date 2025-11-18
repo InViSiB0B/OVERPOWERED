@@ -1,6 +1,7 @@
 package com.example.overpowered.today.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -13,14 +14,32 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.example.overpowered.today.Task
 import com.example.overpowered.data.RecurrenceType
 
 @Composable
-fun TaskItem(task: Task, onComplete: () -> Unit, onDelete: () -> Unit) {
+fun TaskItem(
+    task: Task,
+    onComplete: () -> Unit,
+    onDelete: () -> Unit,
+    onEdit: () -> Unit = {}
+) {
+    val haptic = LocalHapticFeedback.current
+
     Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .combinedClickable(
+                onClick = { /* No action on regular click */ },
+                onLongClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onEdit()
+                }
+            ),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiary),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)

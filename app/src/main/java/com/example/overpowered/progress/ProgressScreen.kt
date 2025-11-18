@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.overpowered.data.FirebaseTask
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -43,6 +44,9 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import com.example.overpowered.data.GoalSize
 import com.example.overpowered.data.LongTermGoal
 import com.example.overpowered.progress.components.StreakCalculator
@@ -146,6 +150,9 @@ fun ProgressScreen(
                 goals = longTermGoals,
                 onCreateGoal = { name, desc, tags, size ->
                     viewModel.createLongTermGoal(name, desc, tags, size)
+                },
+                onUpdateGoal = { goal, name, desc, tags, size ->
+                    viewModel.updateLongTermGoal(goal, name, desc, tags, size)
                 },
                 onDeleteGoal = { goalId ->
                     viewModel.deleteLongTermGoal(goalId)
@@ -660,10 +667,13 @@ fun LeaderboardEntryRow(
 fun LongTermGoalsSection(
     goals: List<LongTermGoal>,
     onCreateGoal: (String, String?, List<String>, String) -> Unit,
+    onUpdateGoal: (LongTermGoal, String, String?, List<String>, String) -> Unit,
     onDeleteGoal: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showCreateDialog by remember { mutableStateOf(false) }
+    var editingGoal by remember { mutableStateOf<LongTermGoal?>(null) }
+    var isEditMode by remember { mutableStateOf(false) }
 
     Column(modifier = modifier) {
         // Section Header
@@ -705,7 +715,12 @@ fun LongTermGoalsSection(
                 goals.forEach { goal ->
                     LongTermGoalCard(
                         goal = goal,
-                        onDelete = { onDeleteGoal(goal.id) }
+                        onDelete = { onDeleteGoal(goal.id) },
+                        onEdit = {
+                            editingGoal = goal
+                            isEditMode = true
+                            showCreateDialog = true
+                        }
                     )
                 }
             }
@@ -715,11 +730,23 @@ fun LongTermGoalsSection(
     // Create Goal Dialog
     if (showCreateDialog) {
         CreateGoalDialog(
-            onDismiss = { showCreateDialog = false },
-            onCreate = { name, desc, tags, size ->
-                onCreateGoal(name, desc, tags, size)
+            onDismiss = {
                 showCreateDialog = false
-            }
+                editingGoal = null
+                isEditMode = false
+            },
+            onCreate = { name, desc, tags, size ->
+                if (isEditMode && editingGoal != null) {
+                    onUpdateGoal(editingGoal!!, name, desc, tags, size)
+                } else {
+                    onCreateGoal(name, desc, tags, size)
+                }
+                showCreateDialog = false
+                editingGoal = null
+                isEditMode = false
+            },
+            initialGoal = editingGoal,
+            isEditMode = isEditMode
         )
     }
 }
@@ -779,14 +806,24 @@ fun EmptyGoalsState(onCreateClick: () -> Unit) {
 @Composable
 fun LongTermGoalCard(
     goal: LongTermGoal,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit = {}
 ) {
+    val haptic = LocalHapticFeedback.current
     val config = GoalSize.getConfig(goal.size)
     val progress = goal.currentPoints.toFloat() / goal.targetPoints.toFloat()
     val weeksElapsed = goal.currentWeek + 1
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = { /* No action on regular click */ },
+                onLongClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onEdit()
+                }
+            ),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -943,11 +980,13 @@ fun LongTermGoalCard(
 @Composable
 fun CreateGoalDialog(
     onDismiss: () -> Unit,
-    onCreate: (name: String, description: String?, tags: List<String>, size: String) -> Unit
+    onCreate: (name: String, description: String?, tags: List<String>, size: String) -> Unit,
+    initialGoal: LongTermGoal? = null,
+    isEditMode: Boolean = false
 ) {
     var goalName by remember { mutableStateOf("") }
     var goalDescription by remember { mutableStateOf("") }
-    var goalTags by remember { mutableStateOf("") }
+    var goalTags by remember { mutableStateOf(initialGoal?.tags?.joinToString(", ") ?: "") }
     var selectedSize by remember { mutableStateOf(GoalSize.SHORT) }
 
     AlertDialog(
@@ -957,7 +996,7 @@ fun CreateGoalDialog(
         title = {
             Column {
                 Text(
-                    text = "Create Goal",
+                    text = if (isEditMode) "Edit Goal" else "Create Goal",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -1076,7 +1115,7 @@ fun CreateGoalDialog(
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Create Goal")
+                Text(if (isEditMode) "Update Goal" else "Create Goal")
             }
         },
         dismissButton = {
