@@ -12,6 +12,7 @@ fun TaskList(
     tasks: List<Task>,
     onComplete: (Task) -> Unit,
     onDelete: (Task) -> Unit,
+    onEdit: (Task) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     LazyColumn(modifier = modifier) {
@@ -19,7 +20,8 @@ fun TaskList(
             TaskItem(
                 task = task,
                 onComplete = { onComplete(task) },
-                onDelete = { onDelete(task) }
+                onDelete = { onDelete(task) },
+                onEdit = { onEdit(task) }
             )
         }
     }
