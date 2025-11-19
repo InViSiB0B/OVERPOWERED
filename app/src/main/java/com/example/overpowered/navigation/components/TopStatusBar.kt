@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
@@ -113,11 +114,6 @@ fun TopStatusBar(
                             )
                         }
                     }
-
-                    NotificationButton(
-                        notificationCount = notificationCount,
-                        onClick = onNotificationClick
-                    )
                 }
 
                 // LVL Text
