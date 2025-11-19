@@ -86,7 +86,7 @@ private fun TitleText(
                 )
                 drawRect(brush = brush)
             },
-            color = Color.White //  This will be overridden by the gradient
+            color = Color.White // This will be overridden by the gradient
         )
     } else {
         // Solid color text
