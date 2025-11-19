@@ -7,6 +7,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.overpowered.data.RecurrenceType
-import com.example.overpowered.today.Task
 import com.example.overpowered.today.components.RecurringTaskDeleteDialog
 import com.example.overpowered.today.components.RewardDialog
 import com.example.overpowered.today.components.TaskInputCard
@@ -49,6 +49,17 @@ fun TodayScreen(
     var editingTask by remember { mutableStateOf<Task?>(null) }
     var isEditMode by remember { mutableStateOf(false) }
 
+    fun resetForm() {
+        taskTitle = ""
+        taskDescription = ""
+        taskTags = ""
+        dueDate = null
+        isRecurring = false
+        recurrenceType = null
+        editingTask = null
+        isEditMode = false
+    }
+
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -75,21 +86,34 @@ fun TodayScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = if (isTaskInputVisible) "Add New Task" else "Create a Task",
+                        text = if (isEditMode) "Editing Task" else if (isTaskInputVisible) "Add New Task" else "Create a Task",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f)
                     )
 
                     IconButton(
-                        onClick = { isTaskInputVisible = !isTaskInputVisible },
-                        colors = IconButtonDefaults.filledIconButtonColors( // ← uses primary/onPrimary
+                        onClick = {
+                            if (isEditMode) {
+                                // Cancel edit mode
+                                resetForm()
+                                isTaskInputVisible = false
+                            } else {
+                                // Toggle visibility for adding a new task
+                                isTaskInputVisible = !isTaskInputVisible
+                            }
+                        },
+                        colors = IconButtonDefaults.filledIconButtonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         Icon(
-                            imageVector = if (isTaskInputVisible) Icons.Filled.Delete else Icons.Filled.Add,
+                            imageVector = if (isTaskInputVisible) {
+                                if (isEditMode) Icons.Filled.Close else Icons.Filled.Delete
+                            } else {
+                                Icons.Filled.Add
+                            },
                             contentDescription = null
                         )
                     }
@@ -141,18 +165,17 @@ fun TodayScreen(
                                 }
 
                                 // reset
-                                taskTitle = ""
-                                taskDescription = ""
-                                taskTags = ""
-                                dueDate = null
-                                isRecurring = false
-                                recurrenceType = null
-                                editingTask = null
-                                isEditMode = false
+                                resetForm()
                                 isTaskInputVisible = false
                             }
                         },
-                        submitButtonText = if (isEditMode) "Update Task" else "Add Task"
+                        submitButtonText = if (isEditMode) "Update Task" else "Add Task",
+                        onCancel = if (isEditMode) {
+                            {
+                                resetForm()
+                                isTaskInputVisible = false
+                            }
+                        } else null
                     )
                 }
             }
