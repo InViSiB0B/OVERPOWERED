@@ -3,6 +3,7 @@ package com.example.overpowered.profile.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -106,8 +107,8 @@ fun PlayerNameWithTitle(
     modifier: Modifier = Modifier,
     nameSize: TextUnit = 16.sp,
     titleSize: TextUnit = 14.sp,
-    nameColor: Color = Color(0xFF4A5568),
-    discriminatorColor: Color = Color(0xFF718096),
+    nameColor: Color? = null,
+    discriminatorColor: Color? = null,
     verticalAlignment: Alignment.Vertical = Alignment.CenterVertically,
     spacing: Dp = 8.dp
 ) {
@@ -121,7 +122,7 @@ fun PlayerNameWithTitle(
             text = "$playerName#$discriminator",
             fontSize = nameSize,
             fontWeight = FontWeight.Bold,
-            color = nameColor
+            color = nameColor ?: MaterialTheme.colorScheme.onBackground
         )
 
         // Title (if equipped)
@@ -142,7 +143,7 @@ fun CompactPlayerNameWithTitle(
     modifier: Modifier = Modifier,
     nameSize: TextUnit = 14.sp,
     titleSize: TextUnit = 12.sp,
-    nameColor: Color = Color(0xFF4A5568)
+    nameColor: Color? = null
 ) {
     Row(
         modifier = modifier,
@@ -154,7 +155,7 @@ fun CompactPlayerNameWithTitle(
             text = playerName,
             fontSize = nameSize,
             fontWeight = FontWeight.Medium,
-            color = nameColor
+            color = nameColor ?: MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         // Title (if equipped)
