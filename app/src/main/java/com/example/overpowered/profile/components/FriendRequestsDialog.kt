@@ -29,14 +29,14 @@ fun FriendRequestsDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(20.dp),
         title = {
             Text(
                 text = "Notifications",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF4A5568)
+                color = MaterialTheme.colorScheme.onSurface
             )
         },
         text = {
@@ -48,7 +48,7 @@ fun FriendRequestsDialog(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "\uD83D\uDD14",
+                        text = "🔔",
                         fontSize = 48.sp
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -56,14 +56,14 @@ fun FriendRequestsDialog(
                         text = "No Notifications",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF4A5568),
+                        color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "When something of note happens, it will appear here.",
                         fontSize = 14.sp,
-                        color = Color(0xFF718096),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -86,7 +86,7 @@ fun FriendRequestsDialog(
             Button(
                 onClick = onDismiss,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF667EEA)
+                    containerColor = MaterialTheme.colorScheme.primary
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -124,7 +124,7 @@ fun FriendRequestItem(
                     text = request.fromUserName.split("#")[0],
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4A5568)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 // Show title if available
                 request.fromSelectedTitle?.let { titleId ->
@@ -139,7 +139,7 @@ fun FriendRequestItem(
                 Text(
                     text = "wants to be your friend",
                     fontSize = 14.sp,
-                    color = Color(0xFF718096)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -151,13 +151,13 @@ fun FriendRequestItem(
                     onClick = onAccept,
                     modifier = Modifier.size(40.dp),
                     colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = Color(0xFF48BB78)
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
                     )
                 ) {
                     Icon(
                         Icons.Filled.Check,
                         contentDescription = "Accept",
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -167,13 +167,13 @@ fun FriendRequestItem(
                     onClick = onIgnore,
                     modifier = Modifier.size(40.dp),
                     colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = Color(0xFFE53E3E)
+                        containerColor = MaterialTheme.colorScheme.errorContainer
                     )
                 ) {
                     Icon(
                         Icons.Filled.Close,
                         contentDescription = "Ignore",
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
                         modifier = Modifier.size(20.dp)
                     )
                 }

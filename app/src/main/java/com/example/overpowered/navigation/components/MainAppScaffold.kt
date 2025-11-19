@@ -244,8 +244,11 @@ private fun MainBottomBar(
     onSelectProgress: () -> Unit,
     onSelectShop: () -> Unit
 ) {
+    // A more pronounced gradient for the bar itself, fading from transparent
     val bottomBarBrush = Brush.verticalGradient(
         colors = listOf(
+            Color.Transparent,
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
             MaterialTheme.colorScheme.primaryContainer
         )
@@ -254,18 +257,23 @@ private fun MainBottomBar(
     val isProgressSelected = currentTab == Tab.Progress
     val isShopSelected = currentTab == Tab.Shop
 
+    // A softer, wider glow for the unselected state using the primary color
     val unselectedBrush = Brush.radialGradient(
         colors = listOf(
-            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f),
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
             Color.Transparent
-        )
+        ),
+        radius = 80f // Making the glow wider
     )
 
+    // A more vibrant, multi-step glow for the selected state
     val selectedBrush = Brush.radialGradient(
         colors = listOf(
-            MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+            MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f), // Center color
+            MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f), // Outer glow
             Color.Transparent
-        )
+        ),
+        radius = 90f // Wider radius for a softer edge
     )
 
 

@@ -11,7 +11,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -39,7 +38,8 @@ fun TaskInputCard(
     recurrenceType: RecurrenceType?,
     onRecurrenceTypeChange: (RecurrenceType?) -> Unit,
     onSubmit: () -> Unit,
-    submitButtonText: String = "Add Task"
+    submitButtonText: String = "Add Task",
+    onCancel: (() -> Unit)?
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
 
