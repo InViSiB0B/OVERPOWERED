@@ -7,9 +7,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.overpowered.navigation.MainNavigation
 import com.example.overpowered.ui.theme.OVERPOWEREDTheme
+import com.example.overpowered.viewmodel.AppViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -17,12 +21,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            OVERPOWEREDTheme {
+            val viewModel: AppViewModel = viewModel()
+            val userProfile by viewModel.userProfile.collectAsState()
+
+            OVERPOWEREDTheme(selectedThemeId = userProfile.selectedTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainNavigation()
+                    MainNavigation(viewModel = viewModel)
                 }
             }
         }

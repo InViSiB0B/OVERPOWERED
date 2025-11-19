@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.Typography as M3Typography
 import androidx.compose.ui.unit.sp
+import com.example.overpowered.data.ThemeCatalog
 
 // Shapes: calm, consistent radii
 val OPShapes = Shapes(
@@ -45,10 +46,21 @@ object OPSpace {
 
 @Composable
 fun OVERPOWEREDTheme(
+    selectedThemeId: String? = null,
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val scheme = if (darkTheme) DarkColors else LightColors
+    // Get the selected theme, defaulting to "Follow Device" if none selected
+    val themeId = selectedThemeId ?: "theme_follow_device"
+    val theme = ThemeCatalog.getThemeById(themeId) ?: ThemeCatalog.getDefaultTheme()
+
+    // Determine which color scheme to use based on theme ID and system settings
+    val scheme = when (themeId) {
+        "theme_light" -> theme.lightColorScheme
+        "theme_dark" -> theme.darkColorScheme
+        "theme_follow_device" -> if (darkTheme) theme.darkColorScheme else theme.lightColorScheme
+        else -> if (darkTheme) theme.darkColorScheme else theme.lightColorScheme
+    }
 
     MaterialTheme(
         colorScheme = scheme,

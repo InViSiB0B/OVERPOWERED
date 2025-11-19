@@ -28,6 +28,10 @@ import com.example.overpowered.data.FrameCatalog
 import com.example.overpowered.data.ProfileFrame
 import com.example.overpowered.data.Title
 import com.example.overpowered.data.TitleCatalog
+import com.example.overpowered.data.ThemeCatalog
+import com.example.overpowered.data.AppTheme
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 
 @Composable
 fun EditProfileScreen(
@@ -52,16 +56,15 @@ fun EditProfileScreen(
     // Get actual titles from TitleCatalog
     val allTitles = TitleCatalog.getAllTitles()
 
-    val allThemes = listOf(
-        CustomizationItem("theme_1", "Ocean", "Themes"),
-        CustomizationItem("theme_2", "Flame", "Themes"),
-        CustomizationItem("theme_3", "Void", "Themes")
-    )
+    // Get themes: default themes (always available) + purchased themes
+    val defaultThemes = ThemeCatalog.getDefaultThemes()
+    val purchasableThemes = ThemeCatalog.getPurchasableThemes()
+    val purchasedThemes = purchasableThemes.filter { it.id in purchasedItems }
+    val availableThemes = defaultThemes + purchasedThemes
 
     // Filter to only owned items
     val ownedFrames = allFrames.filter { it.id in purchasedItems }
     val ownedTitles = allTitles.filter { it.id in purchasedItems }
-    val ownedThemes = allThemes.filter { it.id in purchasedItems }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -97,7 +100,7 @@ fun EditProfileScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Profile Picture with Frame (editable)
+        // Profile Picture with Frame
         FramedProfilePicture(
             profileImageUrl = profileImageUrl,
             frameId = selectedFrame,
@@ -180,10 +183,9 @@ fun EditProfileScreen(
             // Theme Selection
             ThemeCustomizationSection(
                 title = "Theme:",
-                items = ownedThemes,
-                selectedItemId = selectedTheme,
-                onItemSelect = onThemeSelect,
-                emptyMessage = "Visit the shop to buy themes!"
+                themes = availableThemes,
+                selectedThemeId = selectedTheme,
+                onThemeSelect = onThemeSelect
             )
 
             // Save button
@@ -208,13 +210,6 @@ fun EditProfileScreen(
         }
     }
 }
-
-// Simple data class for titles and themes (until you create proper catalogs)
-data class CustomizationItem(
-    val id: String,
-    val name: String,
-    val category: String
-)
 
 // Frame-specific customization section
 @Composable
@@ -263,7 +258,6 @@ fun FrameCustomizationSection(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(horizontal = 4.dp)
             ) {
-                // Add "None" option
                 item {
                     SelectableFrameCard(
                         frame = null,
@@ -344,7 +338,6 @@ fun SelectableFrameCard(
     }
 }
 
-// Keep your existing sections for titles and themes
 @Composable
 fun TitleCustomizationSection(
     title: String,
@@ -461,10 +454,9 @@ fun SelectableTitleCard(
 @Composable
 fun ThemeCustomizationSection(
     title: String,
-    items: List<CustomizationItem>,
-    selectedItemId: String?,
-    onItemSelect: (String?) -> Unit,
-    emptyMessage: String
+    themes: List<AppTheme>,
+    selectedThemeId: String?,
+    onThemeSelect: (String?) -> Unit
 ) {
     Column(modifier = Modifier.padding(20.dp)) {
         Text(
@@ -475,50 +467,16 @@ fun ThemeCustomizationSection(
             modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
         )
 
-        if (items.isEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "No themes owned",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF4A5568)
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = emptyMessage,
-                        fontSize = 14.sp,
-                        color = Color(0xFF718096)
-                    )
-                }
-            }
-        } else {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(horizontal = 4.dp)
-            ) {
-                item {
-                    SelectableThemeCard(
-                        item = null,
-                        isSelected = selectedItemId == null,
-                        onSelect = { onItemSelect(null) }
-                    )
-                }
-
-                items(items) { item ->
-                    SelectableThemeCard(
-                        item = item,
-                        isSelected = selectedItemId == item.id,
-                        onSelect = { onItemSelect(item.id) }
-                    )
-                }
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(horizontal = 4.dp)
+        ) {
+            items(themes) { theme ->
+                SelectableThemeCard(
+                    theme = theme,
+                    isSelected = selectedThemeId == theme.id,
+                    onSelect = { onThemeSelect(theme.id) }
+                )
             }
         }
     }
@@ -526,7 +484,7 @@ fun ThemeCustomizationSection(
 
 @Composable
 fun SelectableThemeCard(
-    item: CustomizationItem?,
+    theme: AppTheme,
     isSelected: Boolean,
     onSelect: () -> Unit
 ) {
@@ -545,25 +503,52 @@ fun SelectableThemeCard(
         Card(
             modifier = cardModifier,
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF4A90E2)),
+            colors = CardDefaults.cardColors(containerColor = theme.previewColor),
             elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 4.dp)
         ) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = item?.name ?: "None",
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                // Show color swatches for theme preview
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(0.7f),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(18.dp)
+                                .background(theme.lightColorScheme.primary, CircleShape)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(18.dp)
+                                .background(theme.lightColorScheme.secondary, CircleShape)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(18.dp)
+                                .background(theme.lightColorScheme.tertiary, CircleShape)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = theme.name,
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = item?.name ?: "None",
+            text = theme.name,
             fontSize = 12.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
             color = if (isSelected) Color(0xFF667EEA) else Color(0xFF4A5568)

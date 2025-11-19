@@ -41,7 +41,7 @@ fun ProfileScreen(
     val profileImageUrl = userProfile.profileImageUrl
     val discriminator = userProfile.discriminator
     val selectedTitle = userProfile.selectedTitle
-    // Calculate player level based on experience (super placeholder right now: level = experience / 100 + 1)
+    // Calculate player level based on experience (level = experience / 100 + 1)
     val playerLevel = (playerExperience / 100) + 1
 
     // Add friend dialog state

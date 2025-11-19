@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -21,6 +22,7 @@ import com.example.overpowered.data.FrameCatalog
 import com.example.overpowered.profile.components.FramedProfilePicture
 import com.example.overpowered.data.TitleCatalog
 import com.example.overpowered.profile.components.StyledTitle
+import com.example.overpowered.data.ThemeCatalog
 import java.util.*
 import kotlin.random.Random
 
@@ -33,7 +35,7 @@ data class ShopItem(
     val description: String = ""
 )
 
-// Catalog of all available items (placeholder still)
+// Catalog of all available items
 object ShopCatalog {
     val allFrames = FrameCatalog.getAllFrames().map { frame ->
         ShopItem(
@@ -57,16 +59,16 @@ object ShopCatalog {
         )
     }
 
-    val allThemes = listOf(
-        ShopItem("theme_1", "Ocean", 15, "Themes", Color(0xFF4A90E2)),
-        ShopItem("theme_2", "Flame", 15, "Themes", Color(0xFFE74C3C)),
-        ShopItem("theme_3", "Void", 15, "Themes", Color(0xFF2C3E50)),
-        ShopItem("theme_4", "Aurora", 15, "Themes", Color(0xFF9C27B0)),
-        ShopItem("theme_5", "Desert", 15, "Themes", Color(0xFFE67E22)),
-        ShopItem("theme_6", "Frost", 15, "Themes", Color(0xFF00BCD4)),
-        ShopItem("theme_7", "Jungle", 15, "Themes", Color(0xFF4CAF50)),
-        ShopItem("theme_8", "Storm", 15, "Themes", Color(0xFF607D8B)),
-    )
+    val allThemes = ThemeCatalog.getPurchasableThemes().map { theme ->
+        ShopItem(
+            id = theme.id,
+            name = theme.name,
+            price = theme.price,
+            category = "Themes",
+            color = theme.previewColor,
+            description = theme.description
+        )
+    }
 }
 
 // Get today's date in EST for shop rotation
@@ -318,7 +320,7 @@ fun ShopItemCard(
                         )
                     }
                     "Titles" -> {
-                        // Title preview with actual styling
+                        // Title with styling
                         StyledTitle(
                             titleId = item.id,
                             fontSize = 14.sp,
@@ -326,13 +328,43 @@ fun ShopItemCard(
                         )
                     }
                     "Themes" -> {
-                        // Theme preview - color blocks
-                        Text(
-                            text = item.name,
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        // Theme preview - color swatches showing theme colors
+                        val theme = ThemeCatalog.getThemeById(item.id)
+                        if (theme != null) {
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(0.8f),
+                                    horizontalArrangement = Arrangement.SpaceEvenly
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .background(theme.lightColorScheme.primary, CircleShape)
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .background(theme.lightColorScheme.secondary, CircleShape)
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .background(theme.lightColorScheme.tertiary, CircleShape)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = item.name,
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                 }
             }
