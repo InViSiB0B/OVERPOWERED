@@ -982,6 +982,8 @@ class FirebaseRepository {
                 "friendId" to request.fromUserId,
                 "friendName" to request.fromUserName,
                 "friendProfileImageUrl" to fromUser.profileImageUrl,
+                "selectedFrame" to fromUser.selectedFrame,
+                "selectedTitle" to fromUser.selectedTitle,
                 "createdAt" to Date()
             )
 
@@ -990,6 +992,8 @@ class FirebaseRepository {
                 "friendId" to request.toUserId,
                 "friendName" to request.toUserName,
                 "friendProfileImageUrl" to toUser.profileImageUrl,
+                "selectedFrame" to toUser.selectedFrame,
+                "selectedTitle" to toUser.selectedTitle,
                 "createdAt" to Date()
             )
 

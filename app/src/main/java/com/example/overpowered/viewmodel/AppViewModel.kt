@@ -64,6 +64,10 @@ class AppViewModel : ViewModel() {
     private val _friends = MutableStateFlow<List<Friendship>>(emptyList())
     val friends: StateFlow<List<Friendship>> = _friends.asStateFlow()
 
+    // Enriched friends state with current profile data (frames, titles)
+    private val _enrichedFriends = MutableStateFlow<List<Friendship>>(emptyList())
+    val enrichedFriends: StateFlow<List<Friendship>> = _enrichedFriends.asStateFlow()
+
     // Long Term Goals State
     private val _longTermGoals = MutableStateFlow<List<LongTermGoal>>(emptyList())
     val longTermGoals: StateFlow<List<LongTermGoal>> = _longTermGoals.asStateFlow()
@@ -318,6 +322,8 @@ class AppViewModel : ViewModel() {
                 when (result) {
                     is FirebaseResult.Success -> {
                         _friends.value = result.data
+                        // Enrich friends with current profile data
+                        enrichFriendsWithCurrentProfiles()
                     }
                     is FirebaseResult.Error -> {
                         // Silently fail for friends list
@@ -663,6 +669,41 @@ class AppViewModel : ViewModel() {
     fun ignoreFriendRequest(requestId: String) {
         viewModelScope.launch {
             repository.ignoreFriendRequest(requestId)
+        }
+    }
+
+    // Enrich friends list with current profile data (frames, titles, etc.)
+    private fun enrichFriendsWithCurrentProfiles() {
+        viewModelScope.launch {
+            val friendIds = _friends.value.map { it.friendId }
+
+            if (friendIds.isEmpty()) {
+                _enrichedFriends.value = emptyList()
+                return@launch
+            }
+
+            // Fetch current profiles for all friends
+            val profilesResult = repository.getFriendProfiles(friendIds)
+            val profiles = (profilesResult as? FirebaseResult.Success)?.data ?: emptyList()
+
+            // Map profiles by userId for quick lookup
+            val profileMap = profiles.associateBy { it.userId }
+
+            // Update friendship data with current profile information
+            val enriched = _friends.value.map { friendship ->
+                val currentProfile = profileMap[friendship.friendId]
+                if (currentProfile != null) {
+                    friendship.copy(
+                        friendProfileImageUrl = currentProfile.profileImageUrl,
+                        selectedFrame = currentProfile.selectedFrame,
+                        selectedTitle = currentProfile.selectedTitle
+                    )
+                } else {
+                    friendship
+                }
+            }
+
+            _enrichedFriends.value = enriched
         }
     }
 

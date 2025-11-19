@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.overpowered.data.FriendRequest
 import com.example.overpowered.profile.components.FramedProfilePicture
+import com.example.overpowered.profile.components.StyledTitle
 
 @Composable
 fun FriendRequestsDialog(
@@ -101,26 +102,39 @@ fun FriendRequestItem(
     onAccept: () -> Unit,
     onIgnore: () -> Unit
 ) {
-    Card(
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
+        // Profile picture (with frame if you want)
+        FramedProfilePicture(
+            profileImageUrl = request.fromProfileImageUrl,
+            frameId = request.fromSelectedFrame,
+            size = 40.dp,
+            iconSize = 20.dp
+        )
+
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Text(
-                    text = request.fromUserName,
+                    text = request.fromUserName.split("#")[0],
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF4A5568)
                 )
+                // Show title if available
+                request.fromSelectedTitle?.let { titleId ->
+                    StyledTitle(
+                        titleId = titleId,
+                        fontSize = 12.sp,
+                        includeBackground = true
+                    )
+                }
+            }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "wants to be your friend",
@@ -166,4 +180,3 @@ fun FriendRequestItem(
             }
         }
     }
-}
