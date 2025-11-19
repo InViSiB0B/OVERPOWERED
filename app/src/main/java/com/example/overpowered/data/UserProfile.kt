@@ -85,6 +85,7 @@ data class FriendRequest(
     val fromUserName: String = "",
     val fromProfileImageUrl: String? = null,
     val fromSelectedFrame: String? = null,
+    val fromSelectedTitle: String? = null,
     val toUserId: String = "",
     val toUserName: String = "",
     val status: String = "pending", // "pending", "accepted", "ignored"
@@ -100,6 +101,7 @@ data class Friendship(
     val friendName: String = "",
     val friendProfileImageUrl: String? = null,
     val selectedFrame: String? = null,
+    val selectedTitle: String? = null,
     @ServerTimestamp
     val createdAt: Date? = null
 )

@@ -24,6 +24,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import com.example.overpowered.data.Friendship
 import com.example.overpowered.data.UserProfile
+import com.example.overpowered.profile.components.CompactPlayerNameWithTitle
 import com.example.overpowered.profile.components.FramedProfilePicture
 import com.example.overpowered.profile.components.PlayerNameWithTitle
 
@@ -349,42 +350,21 @@ fun FriendListItem(friend: Friendship) {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Friend profile picture
-        Card(
-            modifier = Modifier.size(40.dp),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF667EEA))
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                if (friend.friendProfileImageUrl != null) {
-                    Image(
-                        painter = rememberAsyncImagePainter(friend.friendProfileImageUrl),
-                        contentDescription = "Friend Profile",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(20.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Icon(
-                        Icons.Filled.Person,
-                        contentDescription = "Friend Profile",
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-        }
+        // Friend profile picture with frame
+        FramedProfilePicture(
+            profileImageUrl = friend.friendProfileImageUrl,
+            frameId = friend.selectedFrame,
+            size = 40.dp,
+            iconSize = 20.dp
+        )
 
-        // Friend name
-        Text(
-            text = friend.friendName,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFF4A5568)
+        // Friend name with title
+        CompactPlayerNameWithTitle(
+            playerName = friend.friendName.split("#")[0], // Get name without discriminator
+            titleId = friend.selectedTitle,
+            nameSize = 16.sp,
+            titleSize = 14.sp,
+            nameColor = Color(0xFF4A5568)
         )
     }
 }

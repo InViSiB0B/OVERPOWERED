@@ -50,7 +50,7 @@ fun MainAppScaffold(
     val isOnboarded by viewModel.isOnboarded.collectAsState()
     val tasks by viewModel.localTasks.collectAsState()
     val pendingFriendRequests by viewModel.pendingFriendRequests.collectAsState()
-    val friends by viewModel.friends.collectAsState()
+    val friends by viewModel.enrichedFriends.collectAsState()
 
     // Clear transient error
     LaunchedEffect(error) {
