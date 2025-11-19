@@ -89,7 +89,7 @@ fun EditProfileScreen(
                 Icon(
                     Icons.Filled.ArrowBack,
                     contentDescription = "Back to Profile",
-                    tint = Color(0xFF4A5568),
+                    tint = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -109,13 +109,13 @@ fun EditProfileScreen(
         Button(
             onClick = { imagePickerLauncher.launch("image/*") },
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF667EEA)
+                containerColor = MaterialTheme.colorScheme.primary
             ),
             shape = RoundedCornerShape(8.dp)
         ) {
             Text(
                 text = "Change Photo",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onPrimary,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -125,7 +125,7 @@ fun EditProfileScreen(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFC))
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
@@ -135,7 +135,7 @@ fun EditProfileScreen(
                     text = "Edit Profile",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4A5568)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 // Player Name field
@@ -144,7 +144,7 @@ fun EditProfileScreen(
                         text = "Player Name",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF4A5568)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     OutlinedTextField(
@@ -152,8 +152,8 @@ fun EditProfileScreen(
                         onValueChange = setTempName,
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF667EEA),
-                            unfocusedBorderColor = Color(0xFFE2E8F0)
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
                         )
                     )
                 }
@@ -192,15 +192,15 @@ fun EditProfileScreen(
                     onPlayerNameChange(tempName)
                     onBackClick()
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.width(200.dp).align(Alignment.CenterHorizontally),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF48BB78)
+                    containerColor = MaterialTheme.colorScheme.secondary
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
                     text = "Save Changes",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSecondary,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -230,7 +230,7 @@ fun FrameCustomizationSection(
             text = title,
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF4A5568),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
         )
 
@@ -238,7 +238,7 @@ fun FrameCustomizationSection(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF))
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
@@ -248,13 +248,13 @@ fun FrameCustomizationSection(
                         text = "No frames owned",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF4A5568)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = emptyMessage,
                         fontSize = 14.sp,
-                        color = Color(0xFF718096)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                 }
             }
@@ -297,7 +297,7 @@ fun SelectableFrameCard(
             Modifier
                 .size(100.dp)
                 .selectable(selected = isSelected, onClick = onSelect)
-                .border(3.dp, Color(0xFF667EEA), RoundedCornerShape(12.dp))
+                .border(3.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
         } else {
             Modifier
                 .size(100.dp)
@@ -307,7 +307,7 @@ fun SelectableFrameCard(
         Card(
             modifier = cardModifier,
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 4.dp)
         ) {
             Box(
@@ -317,7 +317,7 @@ fun SelectableFrameCard(
                 if (frame == null) {
                     Text(
                         text = "None",
-                        color = Color(0xFF4A5568),
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -339,7 +339,7 @@ fun SelectableFrameCard(
             text = frame?.name ?: "None",
             fontSize = 12.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            color = if (isSelected) Color(0xFF667EEA) else Color(0xFF4A5568)
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -358,7 +358,7 @@ fun TitleCustomizationSection(
             text = title,
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF4A5568),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
         )
 
@@ -366,7 +366,7 @@ fun TitleCustomizationSection(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
@@ -376,13 +376,13 @@ fun TitleCustomizationSection(
                         text = "No titles owned",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF4A5568)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = emptyMessage,
                         fontSize = 14.sp,
-                        color = Color(0xFF718096)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                 }
             }
@@ -422,7 +422,7 @@ fun SelectableTitleCard(
             Modifier
                 .size(100.dp)
                 .selectable(selected = isSelected, onClick = onSelect)
-                .border(3.dp, Color(0xFF667EEA), RoundedCornerShape(12.dp))
+                .border(3.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
         } else {
             Modifier
                 .size(100.dp)
@@ -432,7 +432,7 @@ fun SelectableTitleCard(
         Card(
             modifier = cardModifier,
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF96CEB4)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 4.dp)
         ) {
             Box(
@@ -441,7 +441,7 @@ fun SelectableTitleCard(
             ) {
                 Text(
                     text = item?.name ?: "None",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -453,7 +453,7 @@ fun SelectableTitleCard(
             text = item?.name ?: "None",
             fontSize = 12.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            color = if (isSelected) Color(0xFF667EEA) else Color(0xFF4A5568)
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -471,7 +471,7 @@ fun ThemeCustomizationSection(
             text = title,
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF4A5568),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
         )
 
@@ -479,7 +479,7 @@ fun ThemeCustomizationSection(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
@@ -489,13 +489,13 @@ fun ThemeCustomizationSection(
                         text = "No themes owned",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF4A5568)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = emptyMessage,
                         fontSize = 14.sp,
-                        color = Color(0xFF718096)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                 }
             }
@@ -535,7 +535,7 @@ fun SelectableThemeCard(
             Modifier
                 .size(100.dp)
                 .selectable(selected = isSelected, onClick = onSelect)
-                .border(3.dp, Color(0xFF667EEA), RoundedCornerShape(12.dp))
+                .border(3.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
         } else {
             Modifier
                 .size(100.dp)
@@ -545,7 +545,7 @@ fun SelectableThemeCard(
         Card(
             modifier = cardModifier,
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF4A90E2)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 4.dp)
         ) {
             Box(
@@ -554,7 +554,7 @@ fun SelectableThemeCard(
             ) {
                 Text(
                     text = item?.name ?: "None",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -566,7 +566,7 @@ fun SelectableThemeCard(
             text = item?.name ?: "None",
             fontSize = 12.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            color = if (isSelected) Color(0xFF667EEA) else Color(0xFF4A5568)
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
         )
     }
 }

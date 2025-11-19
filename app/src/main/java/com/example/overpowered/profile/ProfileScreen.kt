@@ -1,5 +1,6 @@
 package com.example.overpowered.profile
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -51,60 +52,51 @@ fun ProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
+            .padding(16.dp) // Consistent padding
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(20.dp) // Consistent spacing
     ) {
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Edit button and Add Friend button
+        // Top action buttons
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Button(
                 onClick = { showAddFriendDialog.value = true },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
                 ),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(12.dp) // Softer corners
             ) {
                 Icon(
                     Icons.Filled.AddCircle,
                     contentDescription = "Add Friend",
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onPrimary
+                    modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Add Friend",
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                Text("Add Friend")
             }
 
-            Button(
+            OutlinedButton(
                 onClick = onEditClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary
-                ),
-                shape = RoundedCornerShape(8.dp)
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary),
+                shape = RoundedCornerShape(12.dp), // Softer corners
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.secondary
+                )
             ) {
                 Icon(
                     Icons.Filled.Edit,
                     contentDescription = "Edit Profile",
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSecondary
+                    modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Edit",
-                    color = MaterialTheme.colorScheme.onSecondary,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                Text("Edit")
             }
         }
 
@@ -112,7 +104,7 @@ fun ProfileScreen(
         Card(
             modifier = Modifier.size(120.dp),
             shape = RoundedCornerShape(60.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -128,7 +120,7 @@ fun ProfileScreen(
                     Icon(
                         Icons.Filled.Person,
                         contentDescription = "Profile Picture",
-                        tint = MaterialTheme.colorScheme.onPrimary,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(60.dp)
                     )
                 }
@@ -156,7 +148,7 @@ fun ProfileScreen(
             ) {
                 Text(
                     text = "Stats",
-                    fontSize = 18.sp,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -168,12 +160,12 @@ fun ProfileScreen(
                 ) {
                     Text(
                         text = "Player Level",
-                        fontSize = 16.sp,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = playerLevel.toString(),
-                        fontSize = 16.sp,
+                        style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -186,12 +178,12 @@ fun ProfileScreen(
                 ) {
                     Text(
                         text = "Money",
-                        fontSize = 16.sp,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = "$$playerMoney",
-                        fontSize = 16.sp,
+                        style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.secondary
                     )
@@ -204,12 +196,12 @@ fun ProfileScreen(
                 ) {
                     Text(
                         text = "Experience Points",
-                        fontSize = 16.sp,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = playerExperience.toString(),
-                        fontSize = 16.sp,
+                        style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.tertiary
                     )
@@ -232,13 +224,13 @@ fun ProfileScreen(
                 ) {
                     Text(
                         text = "Friends",
-                        fontSize = 18.sp,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = "${friends.size}",
-                        fontSize = 16.sp,
+                        style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -249,23 +241,22 @@ fun ProfileScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
                             text = "👥",
                             fontSize = 32.sp
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "No friends yet",
-                            fontSize = 14.sp,
+                            style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "Add friends to see them here!",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
                     }
                 } else {
@@ -297,7 +288,7 @@ fun ProfileScreen(
                 Column {
                     Text(
                         text = "Enter your friend's player name:",
-                        fontSize = 14.sp,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(12.dp))
