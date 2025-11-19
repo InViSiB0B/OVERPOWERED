@@ -56,7 +56,7 @@ fun EditProfileScreen(
     // Get actual titles from TitleCatalog
     val allTitles = TitleCatalog.getAllTitles()
 
-    // Get themes: default themes (always available) + purchased themes
+    // Get themes: default themes (always available) + purchased themess
     val defaultThemes = ThemeCatalog.getDefaultThemes()
     val purchasableThemes = ThemeCatalog.getPurchasableThemes()
     val purchasedThemes = purchasableThemes.filter { it.id in purchasedItems }
