@@ -230,7 +230,7 @@ fun MainAppScaffold(
             }
         }
 
-        // Big center Task button overlay (NOT part of bottomBar height)
+        // Big center Task button overlay ((NOT part of bottomBar height)
         CenterTaskButton(
             isSelected = isTodaySelected,
             onClick = {
