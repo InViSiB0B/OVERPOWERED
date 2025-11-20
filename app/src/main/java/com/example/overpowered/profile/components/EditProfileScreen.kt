@@ -56,7 +56,7 @@ fun EditProfileScreen(
     // Get actual titles from TitleCatalog
     val allTitles = TitleCatalog.getAllTitles()
 
-    // Get themes: default themes (always available) + purchased themess
+    // Get themes: default themes (always available) + purchased themes
     val defaultThemes = ThemeCatalog.getDefaultThemes()
     val purchasableThemes = ThemeCatalog.getPurchasableThemes()
     val purchasedThemes = purchasableThemes.filter { it.id in purchasedItems }
@@ -425,18 +425,22 @@ fun SelectableTitleCard(
         Card(
             modifier = cardModifier,
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 4.dp)
         ) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().padding(4.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = item?.name ?: "None",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    softWrap = true,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
         }
@@ -446,7 +450,10 @@ fun SelectableTitleCard(
             text = item?.name ?: "None",
             fontSize = 12.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            softWrap = false,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
     }
 }

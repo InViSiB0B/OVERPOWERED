@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.overpowered.data.RecurrenceType
 import com.example.overpowered.today.components.RecurringTaskDeleteDialog
@@ -204,14 +205,9 @@ fun TodayScreen(
                     showRewardDialog = true
                 },
                 onDelete = { task ->
-                    if (task.isRecurring) {
-                        // Show dialog for recurring task
-                        taskToDelete = task
-                        showDeleteDialog = true
-                    } else {
-                        // Delete immediately for non-recurring
-                        onDeleteTask(task)
-                    }
+                    // Always show confirmation dialog
+                    taskToDelete = task
+                    showDeleteDialog = true
                 },
                 onEdit = { task ->
                     // Populate form with task data
@@ -238,27 +234,71 @@ fun TodayScreen(
         )
     }
 
-    // Delete confirmation dialog for recurring tasks
+    // Delete confirmation dialog
     if (showDeleteDialog && taskToDelete != null) {
-        RecurringTaskDeleteDialog(
-            taskTitle = taskToDelete!!.title,
-            onDeleteThis = {
-                onDeleteSingleRecurring(taskToDelete!!)
-                showDeleteDialog = false
-                taskToDelete = null
-            },
-            onDeleteAll = {
-                taskToDelete!!.recurrenceParentId?.let { parentId ->
-                    onDeleteAllRecurring(parentId)
+        if (taskToDelete!!.isRecurring) {
+            // Show recurring task options
+            RecurringTaskDeleteDialog(
+                taskTitle = taskToDelete!!.title,
+                onDeleteThis = {
+                    onDeleteSingleRecurring(taskToDelete!!)
+                    showDeleteDialog = false
+                    taskToDelete = null
+                },
+                onDeleteAll = {
+                    taskToDelete!!.recurrenceParentId?.let { parentId ->
+                        onDeleteAllRecurring(parentId)
+                    }
+                    showDeleteDialog = false
+                    taskToDelete = null
+                },
+                onDismiss = {
+                    showDeleteDialog = false
+                    taskToDelete = null
                 }
-                showDeleteDialog = false
-                taskToDelete = null
-            },
-            onDismiss = {
-                showDeleteDialog = false
-                taskToDelete = null
-            }
-        )
+            )
+        } else {
+            // Show simple confirmation for non-recurring tasks
+            AlertDialog(
+                onDismissRequest = {
+                    showDeleteDialog = false
+                    taskToDelete = null
+                },
+                title = {
+                    Text(
+                        text = "Delete Task?",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Text("Are you sure you want to delete \"${taskToDelete!!.title}\"?")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            onDeleteTask(taskToDelete!!)
+                            showDeleteDialog = false
+                            taskToDelete = null
+                        },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteDialog = false
+                            taskToDelete = null
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
     }
 }
 

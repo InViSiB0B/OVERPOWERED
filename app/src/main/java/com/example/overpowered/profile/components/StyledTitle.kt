@@ -86,7 +86,10 @@ private fun TitleText(
                 )
                 drawRect(brush = brush)
             },
-            color = Color.White // This will be overridden by the gradient
+            color = Color.White, // This will be overridden by the gradient
+            maxLines = 1,
+            softWrap = false,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
     } else {
         // Solid color text
@@ -94,7 +97,10 @@ private fun TitleText(
             text = title.name,
             style = textStyle,
             color = title.color,
-            modifier = modifier
+            modifier = modifier,
+            maxLines = 1,
+            softWrap = false,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
     }
 }
@@ -122,7 +128,11 @@ fun PlayerNameWithTitle(
             text = "$playerName#$discriminator",
             fontSize = nameSize,
             fontWeight = FontWeight.Bold,
-            color = nameColor ?: MaterialTheme.colorScheme.onBackground
+            color = nameColor ?: MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+            softWrap = false,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false)
         )
 
         // Title (if equipped)
@@ -155,7 +165,11 @@ fun CompactPlayerNameWithTitle(
             text = playerName,
             fontSize = nameSize,
             fontWeight = FontWeight.Medium,
-            color = nameColor ?: MaterialTheme.colorScheme.onSurfaceVariant
+            color = nameColor ?: MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            softWrap = false,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false)
         )
 
         // Title (if equipped)

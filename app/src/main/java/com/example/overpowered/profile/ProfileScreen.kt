@@ -354,7 +354,8 @@ fun FriendListItem(friend: Friendship) {
             playerName = friend.friendName.split("#")[0], // Get name without discriminator
             titleId = friend.selectedTitle,
             nameSize = 16.sp,
-            titleSize = 14.sp
+            titleSize = 14.sp,
+            modifier = Modifier.weight(1f)
         )
     }
 }
