@@ -215,6 +215,13 @@ fun MainAppScaffold(
                                 purchasedItems = userProfile.purchasedItems?.toSet() ?: emptySet(),
                                 onPurchase = { price, itemId ->
                                     viewModel.purchaseItem(itemId, price)
+                                },
+                                onEquipItem = { category, itemId ->
+                                    when (category) {
+                                        "Frames" -> viewModel.updateCustomization(selectedFrame = itemId)
+                                        "Titles" -> viewModel.updateCustomization(selectedTitle = itemId)
+                                        "Themes" -> viewModel.updateCustomization(selectedTheme = itemId)
+                                    }
                                 }
                             )
                         }
