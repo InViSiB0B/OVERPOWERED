@@ -142,10 +142,10 @@ fun TopStatusBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Money Text
+                // Coins display
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "$",
+                        text = "🪙",
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                         style = MaterialTheme.typography.labelMedium
                     )

@@ -7,8 +7,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -400,11 +398,9 @@ fun ShopItemCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                Icon(
-                    Icons.Filled.ShoppingCart,
-                    contentDescription = "Buy",
-                    modifier = Modifier.size(14.dp),
-                    tint = if (canAfford) Color(0xFF4A5568) else Color(0xFF4A5568).copy(alpha = 0.5f)
+                Text(
+                    text = "🪙",
+                    fontSize = 14.sp
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
@@ -423,19 +419,19 @@ fun ShopItemCard(
             onDismissRequest = { showInsufficientFundsDialog = false },
             title = {
                 Text(
-                    text = "Not Enough Money",
+                    text = "Not Enough Coins",
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Column {
                     Text(
-                        text = "You need $${item.price} but only have $${playerMoney}.",
+                        text = "You need 🪙${item.price} but only have 🪙${playerMoney}.",
                         fontSize = 16.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Complete some tasks to earn more money!",
+                        text = "Complete some tasks to earn more coins!",
                         fontSize = 14.sp,
                         color = Color(0xFF667EEA),
                         fontWeight = FontWeight.Medium

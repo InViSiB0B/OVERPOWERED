@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
@@ -225,10 +224,10 @@ fun StatsSummaryCard(stats: PlayerStats, dailyStreak: Int) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                StatPill(Icons.Filled.PlayArrow, "EXP",  stats.exp.toString(),  MaterialTheme.colorScheme.primary)
-                StatPill(Icons.Filled.Star,      "LVL",  stats.level.toString(), MaterialTheme.colorScheme.secondary)
-                StatPill(Icons.Filled.ShoppingCart, "Gold", stats.gold.toString(), MaterialTheme.colorScheme.tertiary)
-                StatPill(Icons.Filled.Check,      "Streak", dailyStreak.toString(), MaterialTheme.colorScheme.error)
+                StatPill(icon = Icons.Filled.PlayArrow, label = "EXP", value = stats.exp.toString(), tint = MaterialTheme.colorScheme.primary)
+                StatPill(icon = Icons.Filled.Star, label = "LVL", value = stats.level.toString(), tint = MaterialTheme.colorScheme.secondary)
+                StatPill(emoji = "🪙", label = "Coins", value = stats.gold.toString(), tint = MaterialTheme.colorScheme.tertiary)
+                StatPill(icon = Icons.Filled.Check, label = "Streak", value = dailyStreak.toString(), tint = MaterialTheme.colorScheme.error)
             }
 
             val progress = (stats.exp.toFloat() / stats.expForNextLevel.toFloat()).coerceIn(0f, 1f)
@@ -251,7 +250,8 @@ fun StatsSummaryCard(stats: PlayerStats, dailyStreak: Int) {
 
 @Composable
 private fun StatPill(
-    icon: ImageVector,
+    icon: ImageVector? = null,
+    emoji: String? = null,
     label: String,
     value: String,
     tint: Color
@@ -267,7 +267,14 @@ private fun StatPill(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(icon, contentDescription = label, tint = tint)
+            if (emoji != null) {
+                Text(
+                    text = emoji,
+                    style = MaterialTheme.typography.titleLarge
+                )
+            } else if (icon != null) {
+                Icon(icon, contentDescription = label, tint = tint)
+            }
             Column {
                 Text(
                     label,
@@ -348,7 +355,7 @@ private fun HistoryRow(item: TaskHistoryItem) {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("+${item.rewardExp} XP", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-            Text("+${item.rewardGold} $", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.tertiary)
+            Text("+🪙${item.rewardGold}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.tertiary)
         }
     }
 }
@@ -965,7 +972,7 @@ fun LongTermGoalCard(
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "+$${goal.rewardMoney}",
+                            text = "+🪙${goal.rewardMoney}",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.tertiary
@@ -1170,7 +1177,7 @@ fun GoalSizeOption(
                     modifier = Modifier.padding(top = 2.dp)
                 )
                 Text(
-                    text = "Rewards: ${config.rewardXP} XP, $${config.rewardMoney}",
+                    text = "Rewards: ${config.rewardXP} XP, 🪙${config.rewardMoney}",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp)
