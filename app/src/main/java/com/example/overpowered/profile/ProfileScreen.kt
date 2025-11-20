@@ -1,16 +1,20 @@
 package com.example.overpowered.profile
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,8 +39,12 @@ fun ProfileScreen(
     playerMoney: Int,
     playerExperience: Int,
     friends: List<Friendship> = emptyList(),
+    searchedUser: UserProfile? = null,
     onEditClick: () -> Unit,
-    onSendFriendRequest: (String) -> Unit = {}
+    onSearchUser: (String) -> Unit = {},
+    onSendFriendRequest: (String) -> Unit = {},
+    onClearSearchedUser: () -> Unit = {},
+    onRemoveFriend: (String) -> Unit = {}
 ) {
     val playerName = userProfile.playerName
     val profileImageUrl = userProfile.profileImageUrl
@@ -47,6 +55,11 @@ fun ProfileScreen(
 
     // Add friend dialog state
     val showAddFriendDialog = remember { mutableStateOf(false) }
+
+    // Remove friend dialog state
+    var selectedFriendId by remember { mutableStateOf<String?>(null) }
+    var selectedFriendName by remember { mutableStateOf("") }
+    var showRemoveFriendDialog by remember { mutableStateOf(false) }
     val friendNameInput = remember { mutableStateOf("") }
 
     Column(
@@ -264,7 +277,17 @@ fun ProfileScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         friends.forEach { friend ->
-                            FriendListItem(friend)
+                            FriendListItem(
+                                friend = friend,
+                                isSelected = selectedFriendId == friend.friendId,
+                                onClick = {
+                                    selectedFriendId = if (selectedFriendId == friend.friendId) null else friend.friendId
+                                },
+                                onRemove = {
+                                    selectedFriendName = friend.friendName.split("#")[0]
+                                    showRemoveFriendDialog = true
+                                }
+                            )
                         }
                     }
                 }
@@ -274,13 +297,16 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height(24.dp))
     }
 
-    // Add Friends Dialog
+    // Search Friends Dialog
     if (showAddFriendDialog.value) {
         AlertDialog(
-            onDismissRequest = { showAddFriendDialog.value = false },
+            onDismissRequest = {
+                friendNameInput.value = ""
+                showAddFriendDialog.value = false
+            },
             title = {
                 Text(
-                    text = "Add Friend",
+                    text = "Search Friend",
                     fontWeight = FontWeight.Bold
                 )
             },
@@ -305,7 +331,7 @@ fun ProfileScreen(
                 Button(
                     onClick = {
                         if (friendNameInput.value.isNotBlank()) {
-                            onSendFriendRequest(friendNameInput.value)
+                            onSearchUser(friendNameInput.value)
                             friendNameInput.value = ""
                             showAddFriendDialog.value = false
                         }
@@ -315,7 +341,7 @@ fun ProfileScreen(
                     ),
                     enabled = friendNameInput.value.isNotBlank()
                 ) {
-                    Text("Send Request")
+                    Text("Search")
                 }
             },
             dismissButton = {
@@ -332,12 +358,133 @@ fun ProfileScreen(
             shape = RoundedCornerShape(16.dp)
         )
     }
+
+    // User Found Confirmation Dialog
+    if (searchedUser != null) {
+        AlertDialog(
+            onDismissRequest = {
+                onClearSearchedUser()
+            },
+            title = {
+                Text(
+                    text = "Send Friend Request?",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Profile picture with frame
+                    FramedProfilePicture(
+                        profileImageUrl = searchedUser.profileImageUrl,
+                        frameId = searchedUser.selectedFrame,
+                        size = 80.dp
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Player name with title
+                    PlayerNameWithTitle(
+                        playerName = searchedUser.playerName ?: "Unknown",
+                        discriminator = searchedUser.discriminator ?: "0000",
+                        titleId = searchedUser.selectedTitle,
+                        nameSize = 18.sp,
+                        titleSize = 14.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Do you want to send a friend request to this player?",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val playerNameWithDiscriminator = "${searchedUser.playerName}#${searchedUser.discriminator}"
+                        onSendFriendRequest(playerNameWithDiscriminator)
+                        onClearSearchedUser()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text("Send Request")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        onClearSearchedUser()
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    // Remove Friend Confirmation Dialog
+    if (showRemoveFriendDialog && selectedFriendId != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showRemoveFriendDialog = false
+                selectedFriendId = null
+            },
+            title = {
+                Text(
+                    text = "Remove Friend?",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text("Are you sure you want to remove $selectedFriendName from your friends list?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onRemoveFriend(selectedFriendId!!)
+                        showRemoveFriendDialog = false
+                        selectedFriendId = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Remove")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showRemoveFriendDialog = false
+                        selectedFriendId = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 @Composable
-fun FriendListItem(friend: Friendship) {
+fun FriendListItem(
+    friend: Friendship,
+    isSelected: Boolean = false,
+    onClick: () -> Unit = {},
+    onRemove: () -> Unit = {}
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -357,5 +504,19 @@ fun FriendListItem(friend: Friendship) {
             titleSize = 14.sp,
             modifier = Modifier.weight(1f)
         )
+
+        // Show X button when selected
+        if (isSelected) {
+            IconButton(
+                onClick = onRemove,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = "Remove Friend",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        }
     }
 }
