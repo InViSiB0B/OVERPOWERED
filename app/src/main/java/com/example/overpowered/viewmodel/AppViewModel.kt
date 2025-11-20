@@ -68,6 +68,10 @@ class AppViewModel : ViewModel() {
     private val _enrichedFriends = MutableStateFlow<List<Friendship>>(emptyList())
     val enrichedFriends: StateFlow<List<Friendship>> = _enrichedFriends.asStateFlow()
 
+    // Searched user state
+    private val _searchedUser = MutableStateFlow<UserProfile?>(null)
+    val searchedUser: StateFlow<UserProfile?> = _searchedUser.asStateFlow()
+
     // Long Term Goals State
     private val _longTermGoals = MutableStateFlow<List<LongTermGoal>>(emptyList())
     val longTermGoals: StateFlow<List<LongTermGoal>> = _longTermGoals.asStateFlow()
@@ -638,6 +642,28 @@ class AppViewModel : ViewModel() {
     }
 
     // Friend operations
+    fun searchUser(playerName: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _searchedUser.value = null // Clear previous search
+
+            when (val result = repository.searchUser(playerName)) {
+                is FirebaseResult.Success -> {
+                    _searchedUser.value = result.data
+                }
+                is FirebaseResult.Error -> {
+                    _error.value = result.exception.message
+                }
+                else -> {}
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun clearSearchedUser() {
+        _searchedUser.value = null
+    }
+
     fun sendFriendRequest(playerName: String) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -669,6 +695,17 @@ class AppViewModel : ViewModel() {
     fun ignoreFriendRequest(requestId: String) {
         viewModelScope.launch {
             repository.ignoreFriendRequest(requestId)
+        }
+    }
+
+    fun removeFriend(friendId: String) {
+        viewModelScope.launch {
+            when (val result = repository.removeFriend(friendId)) {
+                is FirebaseResult.Error -> {
+                    _error.value = "Failed to remove friend: ${result.exception.message}"
+                }
+                else -> {}
+            }
         }
     }
 

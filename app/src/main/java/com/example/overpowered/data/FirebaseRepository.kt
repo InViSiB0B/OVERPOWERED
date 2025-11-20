@@ -846,6 +846,48 @@ class FirebaseRepository {
     }
 
     // ==================== FRIEND REQUEST OPERATIONS (SUBCOLLECTION) ====================
+    suspend fun searchUser(playerNameWithDiscriminator: String): FirebaseResult<UserProfile> {
+        val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
+
+        return try {
+            // Parse username and discriminator (e.g., "Bob#1234")
+            val parts = playerNameWithDiscriminator.split("#")
+            if (parts.size != 2) {
+                return FirebaseResult.Error(Exception("Invalid format. Use Username#1234"))
+            }
+
+            val targetUsername = parts[0]
+            val targetDiscriminator = parts[1]
+
+            if (targetDiscriminator.length != 4 || !targetDiscriminator.all { it.isDigit() }) {
+                return FirebaseResult.Error(Exception("Invalid discriminator. Must be 4 digits"))
+            }
+
+            // Search for user by username AND discriminator
+            val querySnapshot = firestore.collection("users")
+                .whereEqualTo("playerName", targetUsername)
+                .whereEqualTo("discriminator", targetDiscriminator)
+                .get()
+                .await()
+
+            if (querySnapshot.isEmpty) {
+                return FirebaseResult.Error(Exception("Player not found"))
+            }
+
+            val targetUserDoc = querySnapshot.documents.first()
+            val targetUser = targetUserDoc.toObject(UserProfile::class.java)
+                ?: return FirebaseResult.Error(Exception("Failed to parse user profile"))
+
+            if (targetUser.userId == userId) {
+                return FirebaseResult.Error(Exception("You cannot add yourself as a friend"))
+            }
+
+            FirebaseResult.Success(targetUser)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
+    }
+
     suspend fun sendFriendRequest(playerNameWithDiscriminator: String): FirebaseResult<Unit> {
         val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
 
@@ -1072,6 +1114,41 @@ class FirebaseRepository {
                 }
 
             awaitClose { listener.remove() }
+        }
+    }
+
+    // Remove a friend (deletes friendship from both users)
+    suspend fun removeFriend(friendId: String): FirebaseResult<Unit> {
+        val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
+
+        return try {
+            // Find and delete friendship document from current user's friends subcollection
+            val currentUserFriendships = firestore.collection("users")
+                .document(userId)
+                .collection("friends")
+                .whereEqualTo("friendId", friendId)
+                .get()
+                .await()
+
+            currentUserFriendships.documents.forEach { doc ->
+                doc.reference.delete().await()
+            }
+
+            // Find and delete friendship document from friend's friends subcollection
+            val friendUserFriendships = firestore.collection("users")
+                .document(friendId)
+                .collection("friends")
+                .whereEqualTo("friendId", userId)
+                .get()
+                .await()
+
+            friendUserFriendships.documents.forEach { doc ->
+                doc.reference.delete().await()
+            }
+
+            FirebaseResult.Success(Unit)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
         }
     }
 

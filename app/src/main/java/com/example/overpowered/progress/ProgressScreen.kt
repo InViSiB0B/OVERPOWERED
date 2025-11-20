@@ -681,6 +681,8 @@ fun LongTermGoalsSection(
     var showCreateDialog by remember { mutableStateOf(false) }
     var editingGoal by remember { mutableStateOf<LongTermGoal?>(null) }
     var isEditMode by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var goalToDelete by remember { mutableStateOf<LongTermGoal?>(null) }
 
     Column(modifier = modifier) {
         // Section Header
@@ -722,7 +724,10 @@ fun LongTermGoalsSection(
                 goals.forEach { goal ->
                     LongTermGoalCard(
                         goal = goal,
-                        onDelete = { onDeleteGoal(goal.id) },
+                        onDelete = {
+                            goalToDelete = goal
+                            showDeleteDialog = true
+                        },
                         onEdit = {
                             editingGoal = goal
                             isEditMode = true
@@ -754,6 +759,49 @@ fun LongTermGoalsSection(
             },
             initialGoal = editingGoal,
             isEditMode = isEditMode
+        )
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog && goalToDelete != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showDeleteDialog = false
+                goalToDelete = null
+            },
+            title = {
+                Text(
+                    text = "Delete Goal?",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text("Are you sure you want to delete the \"${goalToDelete!!.name}\" goal? This action cannot be undone.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteGoal(goalToDelete!!.id)
+                        showDeleteDialog = false
+                        goalToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        goalToDelete = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
         )
     }
 }

@@ -92,8 +92,12 @@ fun getDailyShopItems(): Triple<List<ShopItem>, List<ShopItem>, List<ShopItem>> 
 fun ShopScreen(
     playerMoney: Int,
     purchasedItems: Set<String>,
-    onPurchase: (Int, String) -> Unit
+    onPurchase: (Int, String) -> Unit,
+    onEquipItem: (String, String) -> Unit = { _, _ -> }
 ) {
+    // Track recently purchased item for confirmation dialog
+    var purchasedItem by remember { mutableStateOf<ShopItem?>(null) }
+
     // Get today's shop rotation
     val (allFrames, allTitles, allThemes) = remember(getTodayDateEST()) {
         getDailyShopItems()
@@ -123,7 +127,11 @@ fun ShopScreen(
                     title = "Frames:",
                     items = frames,
                     playerMoney = playerMoney,
-                    onPurchase = onPurchase
+                    onPurchase = { price, itemId ->
+                        onPurchase(price, itemId)
+                        // Find and set the purchased item for the confirmation dialog
+                        purchasedItem = frames.find { it.id == itemId }
+                    }
                 )
             }
 
@@ -139,7 +147,11 @@ fun ShopScreen(
                     title = "Titles:",
                     items = titles,
                     playerMoney = playerMoney,
-                    onPurchase = onPurchase
+                    onPurchase = { price, itemId ->
+                        onPurchase(price, itemId)
+                        // Find and set the purchased item for the confirmation dialog
+                        purchasedItem = titles.find { it.id == itemId }
+                    }
                 )
             }
 
@@ -155,7 +167,11 @@ fun ShopScreen(
                     title = "Themes:",
                     items = themes,
                     playerMoney = playerMoney,
-                    onPurchase = onPurchase
+                    onPurchase = { price, itemId ->
+                        onPurchase(price, itemId)
+                        // Find and set the purchased item for the confirmation dialog
+                        purchasedItem = themes.find { it.id == itemId }
+                    }
                 )
             }
         }
@@ -200,6 +216,169 @@ fun ShopScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+
+    // Purchase Confirmation Dialog
+    purchasedItem?.let { item ->
+        PurchaseConfirmationDialog(
+            item = item,
+            onEquipNow = {
+                onEquipItem(item.category, item.id)
+                purchasedItem = null
+            },
+            onDismiss = {
+                purchasedItem = null
+            }
+        )
+    }
+}
+
+@Composable
+fun PurchaseConfirmationDialog(
+    item: ShopItem,
+    onEquipNow: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Congratulations!",
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        text = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "You purchased:",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Item preview
+                Card(
+                    modifier = Modifier.size(100.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = when (item.category) {
+                            "Titles" -> MaterialTheme.colorScheme.surfaceVariant
+                            else -> item.color
+                        }
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        when (item.category) {
+                            "Frames" -> {
+                                FramedProfilePicture(
+                                    profileImageUrl = null,
+                                    frameId = item.id,
+                                    size = 80.dp,
+                                    iconSize = 40.dp
+                                )
+                            }
+                            "Titles" -> {
+                                StyledTitle(
+                                    titleId = item.id,
+                                    fontSize = 14.sp,
+                                    includeBackground = false
+                                )
+                            }
+                            "Themes" -> {
+                                val theme = ThemeCatalog.getThemeById(item.id)
+                                if (theme != null) {
+                                    Column(
+                                        modifier = Modifier.fillMaxSize(),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(0.8f),
+                                            horizontalArrangement = Arrangement.SpaceEvenly
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(24.dp)
+                                                    .background(theme.lightColorScheme.primary, CircleShape)
+                                            )
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(24.dp)
+                                                    .background(theme.lightColorScheme.secondary, CircleShape)
+                                            )
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(24.dp)
+                                                    .background(theme.lightColorScheme.tertiary, CircleShape)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = item.name,
+                                            color = Color.White,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = item.name,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Centered buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = onEquipNow,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Equip Now")
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Button(
+                        onClick = onDismiss,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Neat!")
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {},
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(16.dp)
+    )
 }
 
 @Composable

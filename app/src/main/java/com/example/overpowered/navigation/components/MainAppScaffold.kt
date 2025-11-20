@@ -50,6 +50,7 @@ fun MainAppScaffold(
     val tasks by viewModel.localTasks.collectAsState()
     val pendingFriendRequests by viewModel.pendingFriendRequests.collectAsState()
     val friends by viewModel.enrichedFriends.collectAsState()
+    val searchedUser by viewModel.searchedUser.collectAsState()
 
     // Clear transient error
     LaunchedEffect(error) {
@@ -146,9 +147,19 @@ fun MainAppScaffold(
                             playerMoney = userProfile.playerMoney ?: 100,
                             playerExperience = userProfile.playerExperience ?: 0,
                             friends = friends,
+                            searchedUser = searchedUser,
                             onEditClick = { showEditProfile = true },
+                            onSearchUser = { playerName ->
+                                viewModel.searchUser(playerName)
+                            },
                             onSendFriendRequest = { playerName ->
                                 viewModel.sendFriendRequest(playerName)
+                            },
+                            onClearSearchedUser = {
+                                viewModel.clearSearchedUser()
+                            },
+                            onRemoveFriend = { friendId ->
+                                viewModel.removeFriend(friendId)
                             }
                         )
                     }
@@ -204,6 +215,13 @@ fun MainAppScaffold(
                                 purchasedItems = userProfile.purchasedItems?.toSet() ?: emptySet(),
                                 onPurchase = { price, itemId ->
                                     viewModel.purchaseItem(itemId, price)
+                                },
+                                onEquipItem = { category, itemId ->
+                                    when (category) {
+                                        "Frames" -> viewModel.updateCustomization(selectedFrame = itemId)
+                                        "Titles" -> viewModel.updateCustomization(selectedTitle = itemId)
+                                        "Themes" -> viewModel.updateCustomization(selectedTheme = itemId)
+                                    }
                                 }
                             )
                         }
