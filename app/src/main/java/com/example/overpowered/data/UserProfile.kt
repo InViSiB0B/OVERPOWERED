@@ -117,18 +117,19 @@ data class LongTermGoal(
     // Goal size
     val size: String = "SHORT", // "SHORT", "MEDIUM", "LONG"
 
-    // Progress tracking
-    val targetPoints: Int = 300,
-    val currentPoints: Int = 0,
-    val weeklyTargetPoints: Int = 75, // targetPoints / totalWeeks
+    // Progress tracking - days-based
+    val targetDays: Int = 20,           // Total days needed to complete goal
+    val completedDays: Int = 0,         // Number of days with at least one matching task completed
+    val completedDates: List<String> = emptyList(), // Dates when goal was progressed (format: "YYYY-MM-DD")
+
+    // Strike system - strikes accrue when user misses a day
+    val strikes: Int = 0,               // Number of strikes (max 3), each reduces reward by 25%
+    val lastCheckedDate: String? = null, // Last date the goal was checked for missed days (format: "YYYY-MM-DD")
 
     // Weekly tracking
-    val weeklyProgress: Map<String, Int> = emptyMap(), // "week_0" -> points, "week_1" -> points
+    val weeklyProgress: Map<String, Int> = emptyMap(), // "week_0" -> days completed that week
     val currentWeek: Int = 0,
     val totalWeeks: Int = 4,
-
-    // Task tracking
-    val completedTaskIds: List<String> = emptyList(),
 
     // Metadata
     @ServerTimestamp
@@ -139,7 +140,6 @@ data class LongTermGoal(
     // Rewards
     val rewardXP: Int = 100,
     val rewardMoney: Int = 100,
-
 
     @ServerTimestamp
     val lastUpdated: Date? = null
@@ -153,7 +153,7 @@ object GoalSize {
 
     data class GoalConfig(
         val displayName: String,
-        val points: Int,
+        val targetDays: Int,  // Number of days user must complete a matching task
         val weeks: Int,
         val rewardXP: Int,
         val rewardMoney: Int
@@ -161,10 +161,13 @@ object GoalSize {
 
     fun getConfig(size: String): GoalConfig {
         return when (size) {
-            SHORT -> GoalConfig("Short", 300, 4, 100, 100)
-            MEDIUM -> GoalConfig("Medium", 900, 13, 500, 500)
-            LONG -> GoalConfig("Long", 3600, 52, 2000, 2000)
-            else -> GoalConfig("Short", 300, 4, 100, 100)
+            // Short: 1 month (30 days) - 5x return on 100 coin investment
+            SHORT -> GoalConfig("Short", 30, 4, 500, 500)
+            // Medium: 3 months (90 days) - 20x return on 100 coin investment
+            MEDIUM -> GoalConfig("Medium", 90, 13, 2000, 2000)
+            // Long: 6 months (180 days) - 50x return on 100 coin investment
+            LONG -> GoalConfig("Long", 180, 26, 5000, 5000)
+            else -> GoalConfig("Short", 30, 4, 500, 500)
         }
     }
 }

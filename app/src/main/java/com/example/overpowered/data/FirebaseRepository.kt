@@ -1337,6 +1337,7 @@ class FirebaseRepository {
 
         return try {
             val config = GoalSize.getConfig(size)
+            val todayString = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(Date())
 
             val goal = LongTermGoal(
                 userId = userId,
@@ -1344,8 +1345,11 @@ class FirebaseRepository {
                 description = description,
                 tags = tags,
                 size = size,
-                targetPoints = config.points,
-                weeklyTargetPoints = config.points / config.weeks,
+                targetDays = config.targetDays,
+                completedDays = 0,
+                completedDates = emptyList(),
+                strikes = 0,
+                lastCheckedDate = todayString,
                 totalWeeks = config.weeks,
                 rewardXP = config.rewardXP,
                 rewardMoney = config.rewardMoney,
@@ -1358,13 +1362,14 @@ class FirebaseRepository {
                 "description" to goal.description,
                 "tags" to goal.tags,
                 "size" to goal.size,
-                "targetPoints" to goal.targetPoints,
-                "currentPoints" to goal.currentPoints,
-                "weeklyTargetPoints" to goal.weeklyTargetPoints,
+                "targetDays" to goal.targetDays,
+                "completedDays" to goal.completedDays,
+                "completedDates" to goal.completedDates,
+                "strikes" to goal.strikes,
+                "lastCheckedDate" to goal.lastCheckedDate,
                 "weeklyProgress" to goal.weeklyProgress,
                 "currentWeek" to goal.currentWeek,
                 "totalWeeks" to goal.totalWeeks,
-                "completedTaskIds" to goal.completedTaskIds,
                 "createdAt" to goal.createdAt,
                 "completedAt" to goal.completedAt,
                 "isCompleted" to goal.isCompleted,
@@ -1453,10 +1458,14 @@ class FirebaseRepository {
     }
 
     // Update goal progress when a task is completed
-    suspend fun updateGoalProgressForTask(taskId: String, taskTags: List<String>, taskXP: Int): FirebaseResult<Unit> {
+    // Goals now track days - user must complete at least one task with a matching tag per day
+    suspend fun updateGoalProgressForTask(taskTags: List<String>): FirebaseResult<Unit> {
         val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
 
         return try {
+            // Get today's date as string (format: YYYY-MM-DD)
+            val todayString = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(Date())
+
             // Get all active goals
             val goalsSnapshot = firestore.collection("users")
                 .document(userId)
@@ -1478,43 +1487,53 @@ class FirebaseRepository {
             for (goal in matchingGoals) {
                 val currentWeek = calculateWeekNumber(goal.createdAt ?: Date(), Date())
 
-                // Don't add points if goal is already complete, or we've exceeded total weeks
-                if (goal.currentPoints >= goal.targetPoints || currentWeek >= goal.totalWeeks) {
+                // Skip if goal is already complete
+                if (goal.isCompleted || goal.completedDays >= goal.targetDays) {
                     continue
                 }
 
-                // Calculate points to add (cap at targetPoints)
-                val pointsToAdd = minOf(taskXP, goal.targetPoints - goal.currentPoints)
-                val newCurrentPoints = goal.currentPoints + pointsToAdd
+                // Check if today has already been counted for this goal
+                if (goal.completedDates.contains(todayString)) {
+                    // Already progressed this goal today, skip
+                    continue
+                }
 
-                // Update weekly progress
+                // Add today to completed dates and increment days count
+                val newCompletedDays = goal.completedDays + 1
+
+                // Update weekly progress (track days per week)
                 val weeklyProgress = goal.weeklyProgress.toMutableMap()
                 val weekKey = "week_$currentWeek"
-                weeklyProgress[weekKey] = (weeklyProgress[weekKey] ?: 0) + pointsToAdd
+                weeklyProgress[weekKey] = (weeklyProgress[weekKey] ?: 0) + 1
 
-                // Check if goal is now complete
-                val isCompleted = newCurrentPoints >= goal.targetPoints && currentWeek >= goal.totalWeeks
+                // Check if goal is now complete (reached target days)
+                val isCompleted = newCompletedDays >= goal.targetDays
 
                 // Build updates map
                 val updates = mutableMapOf<String, Any>(
-                    "currentPoints" to newCurrentPoints,
+                    "completedDays" to newCompletedDays,
+                    "completedDates" to FieldValue.arrayUnion(todayString),
                     "weeklyProgress" to weeklyProgress,
-                    "currentWeek" to currentWeek,
-                    "completedTaskIds" to FieldValue.arrayUnion(taskId)
+                    "currentWeek" to currentWeek
                 )
 
                 if (isCompleted) {
                     updates["isCompleted"] = true
                     updates["completedAt"] = Date()
 
-                    // Award completion rewards
+                    // Calculate adjusted rewards based on strikes (25% penalty per strike)
+                    val strikeMultiplier = 1.0f - (goal.strikes * 0.25f)
+                    val adjustedXP = (goal.rewardXP * strikeMultiplier).toInt()
+                    val adjustedMoney = (goal.rewardMoney * strikeMultiplier).toInt()
+
+                    // Award completion rewards (adjusted for strikes)
                     val profileResult = getUserProfile()
                     if (profileResult is FirebaseResult.Success) {
                         val profile = profileResult.data
                         val updatedProfile = profile.copy(
-                            playerExperience = profile.playerExperience + goal.rewardXP,
-                            playerMoney = profile.playerMoney + goal.rewardMoney,
-                            playerLevel = ((profile.playerExperience + goal.rewardXP) / 100) + 1
+                            playerExperience = profile.playerExperience + adjustedXP,
+                            playerMoney = profile.playerMoney + adjustedMoney,
+                            playerLevel = ((profile.playerExperience + adjustedXP) / 100) + 1
                         )
                         saveUserProfile(updatedProfile)
                     }
@@ -1534,6 +1553,87 @@ class FirebaseRepository {
         val millisInWeek = 7L * 24 * 60 * 60 * 1000
         val diffMillis = currentDate.time - startDate.time
         return (diffMillis / millisInWeek).toInt()
+    }
+
+    // Check for missed days and add strikes to goals
+    // Called when goals are loaded to ensure strikes are up to date
+    suspend fun checkAndUpdateStrikes(): FirebaseResult<Unit> {
+        val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
+
+        return try {
+            val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            val todayString = dateFormat.format(Date())
+            val today = dateFormat.parse(todayString) ?: Date()
+
+            // Get all active goals
+            val goalsSnapshot = firestore.collection("users")
+                .document(userId)
+                .collection("longTermGoals")
+                .whereEqualTo("isCompleted", false)
+                .get()
+                .await()
+
+            val goals = goalsSnapshot.documents.mapNotNull { doc ->
+                doc.toObject(LongTermGoal::class.java)?.copy(id = doc.id)
+            }
+
+            for (goal in goals) {
+                // Skip if already at max strikes
+                if (goal.strikes >= 3) {
+                    // Just update lastCheckedDate
+                    if (goal.lastCheckedDate != todayString) {
+                        updateLongTermGoal(goal.id, mapOf("lastCheckedDate" to todayString))
+                    }
+                    continue
+                }
+
+                // Get the last checked date, or use creation date if never checked
+                val lastCheckedString = goal.lastCheckedDate
+                    ?: dateFormat.format(goal.createdAt ?: Date())
+                val lastChecked = dateFormat.parse(lastCheckedString) ?: Date()
+
+                // Calculate days between last check and today
+                val millisInDay = 24L * 60 * 60 * 1000
+                val daysBetween = ((today.time - lastChecked.time) / millisInDay).toInt()
+
+                // If more than 1 day has passed, check for missed days
+                if (daysBetween > 1) {
+                    var missedDays = 0
+                    val calendar = java.util.Calendar.getInstance()
+                    calendar.time = lastChecked
+
+                    // Check each day between lastChecked and today (exclusive of both)
+                    for (i in 1 until daysBetween) {
+                        calendar.add(java.util.Calendar.DAY_OF_YEAR, 1)
+                        val checkDateString = dateFormat.format(calendar.time)
+
+                        // If this date is not in completedDates, it's a missed day
+                        if (!goal.completedDates.contains(checkDateString)) {
+                            missedDays++
+                        }
+                    }
+
+                    // Add strikes for missed days (cap at 3 total)
+                    if (missedDays > 0) {
+                        val newStrikes = minOf(goal.strikes + missedDays, 3)
+                        updateLongTermGoal(goal.id, mapOf(
+                            "strikes" to newStrikes,
+                            "lastCheckedDate" to todayString
+                        ))
+                    } else {
+                        // Just update lastCheckedDate
+                        updateLongTermGoal(goal.id, mapOf("lastCheckedDate" to todayString))
+                    }
+                } else if (goal.lastCheckedDate != todayString) {
+                    // Update lastCheckedDate even if no days missed
+                    updateLongTermGoal(goal.id, mapOf("lastCheckedDate" to todayString))
+                }
+            }
+
+            FirebaseResult.Success(Unit)
+        } catch (e: Exception) {
+            FirebaseResult.Error(e)
+        }
     }
 }
 

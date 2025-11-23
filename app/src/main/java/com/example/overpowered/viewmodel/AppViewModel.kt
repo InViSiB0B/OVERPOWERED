@@ -306,6 +306,11 @@ class AppViewModel : ViewModel() {
             }
         }
 
+        // Check for missed days and update strikes on startup
+        viewModelScope.launch {
+            repository.checkAndUpdateStrikes()
+        }
+
         // Observe long term goals
         repository.observeLongTermGoals().onEach { result ->
             when (result) {
@@ -499,7 +504,7 @@ class AppViewModel : ViewModel() {
 
             if (taskTags.isNotEmpty()) {
                 try {
-                    repository.updateGoalProgressForTask(taskId, taskTags, experienceReward)
+                    repository.updateGoalProgressForTask(taskTags)
                 } catch (e: Exception) {
                     // Silent fail
                 }

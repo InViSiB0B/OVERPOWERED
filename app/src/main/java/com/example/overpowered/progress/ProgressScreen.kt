@@ -872,8 +872,13 @@ fun LongTermGoalCard(
 ) {
     val haptic = LocalHapticFeedback.current
     val config = GoalSize.getConfig(goal.size)
-    val progress = goal.currentPoints.toFloat() / goal.targetPoints.toFloat()
+    val progress = goal.completedDays.toFloat() / goal.targetDays.toFloat()
     val weeksElapsed = goal.currentWeek + 1
+
+    // Calculate strike penalty (25% reduction per strike)
+    val strikeMultiplier = 1.0f - (goal.strikes * 0.25f)
+    val adjustedRewardXP = (goal.rewardXP * strikeMultiplier).toInt()
+    val adjustedRewardMoney = (goal.rewardMoney * strikeMultiplier).toInt()
 
     Card(
         modifier = Modifier
@@ -959,6 +964,39 @@ fun LongTermGoalCard(
                 }
             }
 
+            // Strikes Display (always show to keep user aware)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Strikes:",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (goal.strikes > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                repeat(3) { index ->
+                    Text(
+                        text = if (index < goal.strikes) "✕" else "○",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (index < goal.strikes)
+                            MaterialTheme.colorScheme.error
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (goal.strikes > 0) {
+                    Text(
+                        text = "(-${(goal.strikes * 25)}% reward)",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
+            }
+
             // Progress Bar
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -969,7 +1007,7 @@ fun LongTermGoalCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "${goal.currentPoints} / ${goal.targetPoints} points",
+                        text = "${goal.completedDays} / ${goal.targetDays} days",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onBackground
@@ -1019,18 +1057,38 @@ fun LongTermGoalCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            text = "+${goal.rewardXP} XP",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "+🪙${goal.rewardMoney}",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.tertiary
-                        )
+                        // Show adjusted rewards with strikethrough for original if penalized
+                        if (goal.strikes > 0) {
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = "+$adjustedRewardXP XP",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = "+🪙$adjustedRewardMoney",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.tertiary
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = "+${goal.rewardXP} XP",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "+🪙${goal.rewardMoney}",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
                     }
                 }
             }
@@ -1090,6 +1148,13 @@ fun CreateGoalDialog(
                             )
                         }
                     }
+                    // Strike system warning
+                    Text(
+                        text = "⚠️ Complete a task with a matching tag daily or receive a strike. Each strike reduces your reward by 25%.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
                 }
             }
         },
@@ -1284,7 +1349,7 @@ fun GoalSizeOption(
                     color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "${config.weeks} weeks • ${config.points} points",
+                    text = "${config.weeks} weeks • ${config.targetDays} days target",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp)
