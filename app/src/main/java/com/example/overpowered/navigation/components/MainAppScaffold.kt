@@ -59,7 +59,7 @@ fun MainAppScaffold(
         if (error != null) viewModel.clearError()
     }
 
-    // Safety: if something desyncs and onboarding not complete, route there
+    // Safety: if something de-syncs and onboarding not complete, route there
     if (!isOnboarded && !isLoading) {
         OnboardingScreen(
             onComplete = { username ->
@@ -296,7 +296,7 @@ private fun MainBottomBar(
         radius = 80f // Making the glow wider
     )
 
-    // A more vibrant, multi-step glow for the selected state
+    // A more vibrant, multistep glow for the selected state
     val selectedBrush = Brush.radialGradient(
         colors = listOf(
             MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f), // Center color
