@@ -83,6 +83,10 @@ class AppViewModel : ViewModel() {
     private val _isLoadingLeaderboard = MutableStateFlow(false)
     val isLoadingLeaderboard: StateFlow<Boolean> = _isLoadingLeaderboard.asStateFlow()
 
+    // Completed goal state for popup dialog
+    private val _completedGoalInfo = MutableStateFlow<CompletedGoalInfo?>(null)
+    val completedGoalInfo: StateFlow<CompletedGoalInfo?> = _completedGoalInfo.asStateFlow()
+
     // Exposed StateFlow for UI to observe
     val localTasks: StateFlow<List<Task>> = _tasks.map { firebaseTasks ->
         firebaseTasks.map { it.toLocalTask() }
@@ -504,7 +508,12 @@ class AppViewModel : ViewModel() {
 
             if (taskTags.isNotEmpty()) {
                 try {
-                    repository.updateGoalProgressForTask(taskTags)
+                    val result = repository.updateGoalProgressForTask(taskTags)
+                    if (result is FirebaseResult.Success && result.data.isNotEmpty()) {
+                        // Show popup for the first completed goal
+                        // (If multiple goals complete, show them one at a time)
+                        _completedGoalInfo.value = result.data.first()
+                    }
                 } catch (e: Exception) {
                     // Silent fail
                 }
@@ -520,6 +529,10 @@ class AppViewModel : ViewModel() {
 
             refreshCompletedTasks()
         }
+    }
+
+    fun clearCompletedGoalInfo() {
+        _completedGoalInfo.value = null
     }
 
     fun deleteTask(taskId: String?) {

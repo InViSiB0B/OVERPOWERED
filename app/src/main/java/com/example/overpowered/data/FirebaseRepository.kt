@@ -1459,7 +1459,8 @@ class FirebaseRepository {
 
     // Update goal progress when a task is completed
     // Goals now track days - user must complete at least one task with a matching tag per day
-    suspend fun updateGoalProgressForTask(taskTags: List<String>): FirebaseResult<Unit> {
+    // Returns a list of completed goals (for UI popup)
+    suspend fun updateGoalProgressForTask(taskTags: List<String>): FirebaseResult<List<CompletedGoalInfo>> {
         val userId = getCurrentUserId() ?: return FirebaseResult.Error(Exception("User not authenticated"))
 
         return try {
@@ -1482,6 +1483,9 @@ class FirebaseRepository {
             val matchingGoals = goals.filter { goal ->
                 goal.tags.any { tag -> taskTags.contains(tag) }
             }
+
+            // Track completed goals for UI popup
+            val completedGoals = mutableListOf<CompletedGoalInfo>()
 
             // Update each matching goal
             for (goal in matchingGoals) {
@@ -1537,12 +1541,22 @@ class FirebaseRepository {
                         )
                         saveUserProfile(updatedProfile)
                     }
+
+                    // Add to completed goals list for UI popup
+                    completedGoals.add(
+                        CompletedGoalInfo(
+                            goalName = goal.name,
+                            strikes = goal.strikes,
+                            experienceReward = adjustedXP,
+                            moneyReward = adjustedMoney
+                        )
+                    )
                 }
 
                 updateLongTermGoal(goal.id, updates)
             }
 
-            FirebaseResult.Success(Unit)
+            FirebaseResult.Success(completedGoals)
         } catch (e: Exception) {
             FirebaseResult.Error(e)
         }

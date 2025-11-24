@@ -179,6 +179,14 @@ data class AppState(
     val tasks: List<FirebaseTask> = emptyList()
 )
 
+// Data class for completed goal information (used for UI popup)
+data class CompletedGoalInfo(
+    val goalName: String,
+    val strikes: Int,
+    val experienceReward: Int,
+    val moneyReward: Int
+)
+
 // Result wrapper for async operations
 sealed class FirebaseResult<out T> {
     data class Success<T>(val data: T) : FirebaseResult<T>()

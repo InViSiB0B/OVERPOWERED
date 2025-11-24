@@ -22,6 +22,7 @@ import com.example.overpowered.profile.components.FriendRequestsDialog
 import com.example.overpowered.progress.ProgressScreen
 import com.example.overpowered.shop.ShopScreen
 import com.example.overpowered.today.TodayScreen
+import com.example.overpowered.today.components.GoalRewardDialog
 import com.example.overpowered.viewmodel.AppViewModel
 import androidx.compose.ui.res.painterResource
 import com.example.overpowered.ui.theme.AppIcons
@@ -51,6 +52,7 @@ fun MainAppScaffold(
     val pendingFriendRequests by viewModel.pendingFriendRequests.collectAsState()
     val friends by viewModel.enrichedFriends.collectAsState()
     val searchedUser by viewModel.searchedUser.collectAsState()
+    val completedGoalInfo by viewModel.completedGoalInfo.collectAsState()
 
     // Clear transient error
     LaunchedEffect(error) {
@@ -250,6 +252,17 @@ fun MainAppScaffold(
             onAccept = { request -> viewModel.acceptFriendRequest(request) },
             onIgnore = { requestId -> viewModel.ignoreFriendRequest(requestId) },
             onDismiss = { showNotifications = false }
+        )
+    }
+
+    // Goal completion popup
+    completedGoalInfo?.let { goalInfo ->
+        GoalRewardDialog(
+            goalName = goalInfo.goalName,
+            strikes = goalInfo.strikes,
+            experienceReward = goalInfo.experienceReward,
+            moneyReward = goalInfo.moneyReward,
+            onDismiss = { viewModel.clearCompletedGoalInfo() }
         )
     }
 }
