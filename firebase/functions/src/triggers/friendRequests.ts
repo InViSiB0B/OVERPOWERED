@@ -4,10 +4,17 @@ import { sendNotificationToUser } from "../notifications/sendNotification";
 export const onFriendRequestCreated = onDocumentCreated(
   "users/{userId}/friendRequests/{requestId}",
   async (event) => {
+    console.log("Friend request trigger fired:", event.params);
+
     const userId = event.params.userId;
     const request = event.data?.data();
 
-    if (!request) return;
+    console.log("Request data:", request);
+
+    if (!request) {
+        console.log("No request data found, aborting");
+        return;
+    }
 
     await sendNotificationToUser(userId, {
       type: "FRIEND_REQUEST",
