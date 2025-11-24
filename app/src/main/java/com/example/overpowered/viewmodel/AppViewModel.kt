@@ -83,6 +83,10 @@ class AppViewModel : ViewModel() {
     private val _isLoadingLeaderboard = MutableStateFlow(false)
     val isLoadingLeaderboard: StateFlow<Boolean> = _isLoadingLeaderboard.asStateFlow()
 
+    // Completed goal state for popup dialog
+    private val _completedGoalInfo = MutableStateFlow<CompletedGoalInfo?>(null)
+    val completedGoalInfo: StateFlow<CompletedGoalInfo?> = _completedGoalInfo.asStateFlow()
+
     // Exposed StateFlow for UI to observe
     val localTasks: StateFlow<List<Task>> = _tasks.map { firebaseTasks ->
         firebaseTasks.map { it.toLocalTask() }
@@ -306,6 +310,11 @@ class AppViewModel : ViewModel() {
             }
         }
 
+        // Check for missed days and update strikes on startup
+        viewModelScope.launch {
+            repository.checkAndUpdateStrikes()
+        }
+
         // Observe long term goals
         repository.observeLongTermGoals().onEach { result ->
             when (result) {
@@ -499,7 +508,12 @@ class AppViewModel : ViewModel() {
 
             if (taskTags.isNotEmpty()) {
                 try {
-                    repository.updateGoalProgressForTask(taskId, taskTags, experienceReward)
+                    val result = repository.updateGoalProgressForTask(taskTags)
+                    if (result is FirebaseResult.Success && result.data.isNotEmpty()) {
+                        // Show popup for the first completed goal
+                        // (If multiple goals complete, show them one at a time)
+                        _completedGoalInfo.value = result.data.first()
+                    }
                 } catch (e: Exception) {
                     // Silent fail
                 }
@@ -515,6 +529,10 @@ class AppViewModel : ViewModel() {
 
             refreshCompletedTasks()
         }
+    }
+
+    fun clearCompletedGoalInfo() {
+        _completedGoalInfo.value = null
     }
 
     fun deleteTask(taskId: String?) {
@@ -745,6 +763,10 @@ class AppViewModel : ViewModel() {
     }
 
     // Long term goal operations
+    companion object {
+        const val GOAL_CREATION_COST = 100
+    }
+
     fun createLongTermGoal(
         name: String,
         description: String?,
@@ -752,12 +774,34 @@ class AppViewModel : ViewModel() {
         size: String
     ) {
         viewModelScope.launch {
+            val currentProfile = _userProfile.value
+            if (currentProfile.playerMoney < GOAL_CREATION_COST) {
+                _error.value = "Insufficient funds - need $GOAL_CREATION_COST coins to create a goal"
+                return@launch
+            }
+
+            // Deduct coins first
+            val updatedProfile = currentProfile.copy(
+                playerMoney = currentProfile.playerMoney - GOAL_CREATION_COST
+            )
+            when (val saveResult = repository.saveUserProfile(updatedProfile)) {
+                is FirebaseResult.Error -> {
+                    _error.value = "Failed to deduct coins: ${saveResult.exception.message}"
+                    return@launch
+                }
+                else -> {}
+            }
+
+            // Now create the goal
             when (val result = repository.createLongTermGoal(name, description, tags, size)) {
                 is FirebaseResult.Success -> {
                     android.util.Log.d("AppViewModel", "Long-term goal created successfully")
                 }
                 is FirebaseResult.Error -> {
+                    // Refund coins if goal creation failed
+                    repository.saveUserProfile(currentProfile)
                     android.util.Log.e("AppViewModel", "Failed to create long-term goal: ${result.exception.message}")
+                    _error.value = "Failed to create goal: ${result.exception.message}"
                 }
                 else -> {}
             }
@@ -768,22 +812,16 @@ class AppViewModel : ViewModel() {
         goal: LongTermGoal,
         name: String,
         description: String?,
-        tags: List<String>,
-        size: String
+        tags: List<String>
     ) {
         viewModelScope.launch {
             try {
-                val config = GoalSize.getConfig(size)
-
-                // Build updates map with correct property names
+                // Build updates map - only name, description, and tags are editable
+                // Size/duration cannot be changed after creation
                 val updates = buildMap<String, Any> {
                     put("name", name)
                     description?.let { put("description", it) }
                     put("tags", tags)
-                    put("size", size)
-                    put("targetPoints", config.points)
-                    put("totalWeeks", config.weeks)
-                    put("weeklyTargetPoints", config.points / config.weeks)  // Calculate it
                 }
 
                 // Update in Firebase
@@ -792,15 +830,11 @@ class AppViewModel : ViewModel() {
                         _error.value = "Failed to update goal: ${result.exception.message}"
                     }
                     else -> {
-                        // Success - update local state
+                        // Success - update local state (preserve size-related fields)
                         val updatedGoal = goal.copy(
                             name = name,
                             description = description,
-                            tags = tags,
-                            size = size,
-                            targetPoints = config.points,
-                            totalWeeks = config.weeks,
-                            weeklyTargetPoints = config.points / config.weeks
+                            tags = tags
                         )
 
                         val currentGoals = _longTermGoals.value.toMutableList()

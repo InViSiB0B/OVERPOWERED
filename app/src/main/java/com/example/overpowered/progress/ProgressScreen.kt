@@ -147,11 +147,13 @@ fun ProgressScreen(
         item {
             LongTermGoalsSection(
                 goals = longTermGoals,
+                playerMoney = userProfile.playerMoney,
+                goalCreationCost = AppViewModel.GOAL_CREATION_COST,
                 onCreateGoal = { name, desc, tags, size ->
                     viewModel.createLongTermGoal(name, desc, tags, size)
                 },
-                onUpdateGoal = { goal, name, desc, tags, size ->
-                    viewModel.updateLongTermGoal(goal, name, desc, tags, size)
+                onUpdateGoal = { goal, name, desc, tags ->
+                    viewModel.updateLongTermGoal(goal, name, desc, tags)
                 },
                 onDeleteGoal = { goalId ->
                     viewModel.deleteLongTermGoal(goalId)
@@ -673,8 +675,10 @@ fun LeaderboardEntryRow(
 @Composable
 fun LongTermGoalsSection(
     goals: List<LongTermGoal>,
+    playerMoney: Int,
+    goalCreationCost: Int,
     onCreateGoal: (String, String?, List<String>, String) -> Unit,
-    onUpdateGoal: (LongTermGoal, String, String?, List<String>, String) -> Unit,
+    onUpdateGoal: (LongTermGoal, String, String?, List<String>) -> Unit,
     onDeleteGoal: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -749,7 +753,7 @@ fun LongTermGoalsSection(
             },
             onCreate = { name, desc, tags, size ->
                 if (isEditMode && editingGoal != null) {
-                    onUpdateGoal(editingGoal!!, name, desc, tags, size)
+                    onUpdateGoal(editingGoal!!, name, desc, tags)
                 } else {
                     onCreateGoal(name, desc, tags, size)
                 }
@@ -758,7 +762,9 @@ fun LongTermGoalsSection(
                 isEditMode = false
             },
             initialGoal = editingGoal,
-            isEditMode = isEditMode
+            isEditMode = isEditMode,
+            playerMoney = playerMoney,
+            goalCreationCost = goalCreationCost
         )
     }
 
@@ -866,8 +872,13 @@ fun LongTermGoalCard(
 ) {
     val haptic = LocalHapticFeedback.current
     val config = GoalSize.getConfig(goal.size)
-    val progress = goal.currentPoints.toFloat() / goal.targetPoints.toFloat()
+    val progress = goal.completedDays.toFloat() / goal.targetDays.toFloat()
     val weeksElapsed = goal.currentWeek + 1
+
+    // Calculate strike penalty (25% reduction per strike)
+    val strikeMultiplier = 1.0f - (goal.strikes * 0.25f)
+    val adjustedRewardXP = (goal.rewardXP * strikeMultiplier).toInt()
+    val adjustedRewardMoney = (goal.rewardMoney * strikeMultiplier).toInt()
 
     Card(
         modifier = Modifier
@@ -953,6 +964,39 @@ fun LongTermGoalCard(
                 }
             }
 
+            // Strikes Display (always show to keep user aware)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Strikes:",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (goal.strikes > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                repeat(3) { index ->
+                    Text(
+                        text = if (index < goal.strikes) "✕" else "○",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (index < goal.strikes)
+                            MaterialTheme.colorScheme.error
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (goal.strikes > 0) {
+                    Text(
+                        text = "(-${(goal.strikes * 25)}% reward)",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
+            }
+
             // Progress Bar
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -963,7 +1007,7 @@ fun LongTermGoalCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "${goal.currentPoints} / ${goal.targetPoints} points",
+                        text = "${goal.completedDays} / ${goal.targetDays} days",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onBackground
@@ -1013,18 +1057,38 @@ fun LongTermGoalCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            text = "+${goal.rewardXP} XP",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "+🪙${goal.rewardMoney}",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.tertiary
-                        )
+                        // Show adjusted rewards with strikethrough for original if penalized
+                        if (goal.strikes > 0) {
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = "+$adjustedRewardXP XP",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = "+🪙$adjustedRewardMoney",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.tertiary
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = "+${goal.rewardXP} XP",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "+🪙${goal.rewardMoney}",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
                     }
                 }
             }
@@ -1037,8 +1101,11 @@ fun CreateGoalDialog(
     onDismiss: () -> Unit,
     onCreate: (name: String, description: String?, tags: List<String>, size: String) -> Unit,
     initialGoal: LongTermGoal? = null,
-    isEditMode: Boolean = false
+    isEditMode: Boolean = false,
+    playerMoney: Int = 0,
+    goalCreationCost: Int = 100
 ) {
+    val canAfford = playerMoney >= goalCreationCost
     var goalName by remember(initialGoal) { mutableStateOf(initialGoal?.name ?: "") }
     var goalDescription by remember(initialGoal) { mutableStateOf(initialGoal?.description ?: "") }
     var goalTags by remember(initialGoal) { mutableStateOf(initialGoal?.tags?.joinToString(", ") ?: "") }
@@ -1062,6 +1129,33 @@ fun CreateGoalDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
                 )
+                if (!isEditMode) {
+                    Row(
+                        modifier = Modifier.padding(top = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Cost: 🪙$goalCreationCost",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = if (canAfford) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                        )
+                        if (!canAfford) {
+                            Text(
+                                text = " (You have 🪙$playerMoney)",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                    // Strike system warning
+                    Text(
+                        text = "⚠️ Complete a task with a matching tag daily or receive a strike. Each strike reduces your reward by 25%.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
             }
         },
         text = {
@@ -1121,40 +1215,72 @@ fun CreateGoalDialog(
                     )
                 )
 
-                // Goal Size Selection
-                Column {
-                    Text(
-                        text = "Goal Duration",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
+                // Goal Size Selection - only show when creating, not editing
+                if (!isEditMode) {
+                    Column {
+                        Text(
+                            text = "Goal Duration",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
 
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        GoalSizeOption(
-                            size = GoalSize.SHORT,
-                            isSelected = selectedSize == GoalSize.SHORT,
-                            onClick = { selectedSize = GoalSize.SHORT }
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            GoalSizeOption(
+                                size = GoalSize.SHORT,
+                                isSelected = selectedSize == GoalSize.SHORT,
+                                onClick = { selectedSize = GoalSize.SHORT }
+                            )
+                            GoalSizeOption(
+                                size = GoalSize.MEDIUM,
+                                isSelected = selectedSize == GoalSize.MEDIUM,
+                                onClick = { selectedSize = GoalSize.MEDIUM }
+                            )
+                            GoalSizeOption(
+                                size = GoalSize.LONG,
+                                isSelected = selectedSize == GoalSize.LONG,
+                                onClick = { selectedSize = GoalSize.LONG }
+                            )
+                        }
+                    }
+                } else {
+                    // Show current duration as read-only info when editing
+                    val config = GoalSize.getConfig(selectedSize)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
                         )
-                        GoalSizeOption(
-                            size = GoalSize.MEDIUM,
-                            isSelected = selectedSize == GoalSize.MEDIUM,
-                            onClick = { selectedSize = GoalSize.MEDIUM }
-                        )
-                        GoalSizeOption(
-                            size = GoalSize.LONG,
-                            isSelected = selectedSize == GoalSize.LONG,
-                            onClick = { selectedSize = GoalSize.LONG }
-                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Goal Duration",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "${config.displayName} (${config.weeks} weeks)",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
                     }
                 }
             }
         },
         confirmButton = {
+            val isFormValid = goalName.isNotBlank() && goalTags.isNotBlank()
+            val canCreate = isFormValid && (isEditMode || canAfford)
+
             Button(
                 onClick = {
-                    if (goalName.isNotBlank() && goalTags.isNotBlank()) {
+                    if (isFormValid) {
                         val tags = goalTags.split(",").map { it.trim() }.filter { it.isNotBlank() }
                         onCreate(
                             goalName,
@@ -1164,13 +1290,17 @@ fun CreateGoalDialog(
                         )
                     }
                 },
-                enabled = goalName.isNotBlank() && goalTags.isNotBlank(),
+                enabled = canCreate,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text(if (isEditMode) "Update Goal" else "Create Goal")
+                if (!isEditMode) {
+                    Text("Create Goal (🪙$goalCreationCost)")
+                } else {
+                    Text("Update Goal")
+                }
             }
         },
         dismissButton = {
@@ -1219,7 +1349,7 @@ fun GoalSizeOption(
                     color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "${config.weeks} weeks • ${config.points} points",
+                    text = "${config.weeks} weeks • ${config.targetDays} days target",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp)
