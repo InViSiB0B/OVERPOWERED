@@ -52,7 +52,7 @@ import com.example.overpowered.progress.components.StreakCalculator
 import com.example.overpowered.profile.components.FramedProfilePicture
 import com.example.overpowered.profile.components.CompactPlayerNameWithTitle
 
-// ---------- UI models  ----------
+// ---------- UI models  -----------
 data class PlayerStats(
     val exp: Int,
     val level: Int,
