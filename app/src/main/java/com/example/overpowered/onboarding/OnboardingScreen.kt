@@ -32,7 +32,7 @@ fun OnboardingScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // App logo.
+            // App logo
             Image(
                 painter = painterResource(id = R.drawable.logo),
                 contentDescription = "OVERPOWERED Logo",
