@@ -194,7 +194,10 @@ fun EditProfileScreen(
                     onPlayerNameChange(tempName)
                     onBackClick()
                 },
-                modifier = Modifier.width(200.dp).align(Alignment.CenterHorizontally),
+                modifier = Modifier
+                    .width(200.dp)
+                    .align(Alignment.CenterHorizontally)
+                    .padding(bottom = 16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.secondary
                 ),

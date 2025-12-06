@@ -351,25 +351,25 @@ fun PurchaseConfirmationDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Button(
-                        onClick = onEquipNow,
+                        onClick = onDismiss,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
                         ),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Equip Now")
+                        Text("Neat!")
                     }
 
                     Spacer(modifier = Modifier.width(12.dp))
 
                     Button(
-                        onClick = onDismiss,
+                        onClick = onEquipNow,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondary
                         ),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Neat!")
+                        Text("Equip Now")
                     }
                 }
             }
