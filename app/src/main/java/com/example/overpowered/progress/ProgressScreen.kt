@@ -138,6 +138,7 @@ fun ProgressScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
+        contentPadding = PaddingValues(bottom = 56.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Stats card
@@ -327,13 +328,39 @@ private fun GoalRow(goal: Goal) {
 
 @Composable
 fun TaskHistoryCard(history: List<TaskHistoryItem>) {
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Task History", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
 
             if (history.isEmpty()) {
-                Text("No tasks completed yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "📋",
+                        fontSize = 48.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "No tasks completed yet",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Complete tasks to see your history!",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             } else {
                 history.forEach { item ->
                     HistoryRow(item)
@@ -393,15 +420,26 @@ fun LeaderboardCard(
                 fontWeight = FontWeight.SemiBold
             )
 
-            // Toggle controls
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // Toggle controls - Level/Tasks always in same position
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Only show timeframe toggle when Tasks is selected
+                // Ranking type toggle - always visible, always full width
+                SegmentedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    options = listOf("Level", "Tasks"),
+                    selectedIndex = if (selectedRankingType == LeaderboardRankingType.LEVEL) 0 else 1,
+                    onSelectionChange = { index ->
+                        onRankingTypeChange(
+                            if (index == 0) LeaderboardRankingType.LEVEL else LeaderboardRankingType.TASKS
+                        )
+                    }
+                )
+
+                // Timeframe toggle - only show when Tasks is selected
                 if (selectedRankingType == LeaderboardRankingType.TASKS) {
                     SegmentedButton(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxWidth(),
                         options = listOf("Weekly", "Lifetime"),
                         selectedIndex = if (selectedTimeframe == LeaderboardTimeframe.WEEKLY) 0 else 1,
                         onSelectionChange = { index ->
@@ -411,18 +449,6 @@ fun LeaderboardCard(
                         }
                     )
                 }
-
-                // Ranking type toggle
-                SegmentedButton(
-                    modifier = Modifier.weight(1f),
-                    options = listOf("Level", "Tasks"),
-                    selectedIndex = if (selectedRankingType == LeaderboardRankingType.LEVEL) 0 else 1,
-                    onSelectionChange = { index ->
-                        onRankingTypeChange(
-                            if (index == 0) LeaderboardRankingType.LEVEL else LeaderboardRankingType.TASKS
-                        )
-                    }
-                )
             }
 
             // Leaderboard content
@@ -512,30 +538,49 @@ fun SegmentedButton(
     selectedIndex: Int,
     onSelectionChange: (Int) -> Unit
 ) {
-    Row(
-        modifier = modifier
-            .height(36.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+    Surface(
+        modifier = modifier.height(40.dp),
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 2.dp,
+        shadowElevation = 4.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
     ) {
-        options.forEachIndexed { index, option ->
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .background(
-                        if (selectedIndex == index) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        RoundedCornerShape(8.dp)
-                    )
-                    .clickable { onSelectionChange(index) },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = option,
-                    fontSize = 12.sp,
-                    fontWeight = if (selectedIndex == index) FontWeight.Bold else FontWeight.Medium,
-                    color = if (selectedIndex == index) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            options.forEachIndexed { index, option ->
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable { onSelectionChange(index) },
+                    shape = RoundedCornerShape(7.dp),
+                    color = if (selectedIndex == index)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        Color.Transparent,
+                    tonalElevation = if (selectedIndex == index) 4.dp else 0.dp,
+                    shadowElevation = if (selectedIndex == index) 2.dp else 0.dp
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = option,
+                            fontSize = 13.sp,
+                            fontWeight = if (selectedIndex == index) FontWeight.Bold else FontWeight.Medium,
+                            color = if (selectedIndex == index)
+                                MaterialTheme.colorScheme.onPrimary
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
         }
     }
