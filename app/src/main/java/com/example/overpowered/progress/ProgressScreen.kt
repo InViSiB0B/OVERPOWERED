@@ -198,7 +198,7 @@ private fun UserProfile.toPlayerStatsForProgress(): PlayerStats {
 
 private fun FirebaseTask.toHistoryItem(): TaskHistoryItem {
     val localDate = (completedAt ?: createdAt)?.let { date ->
-        // Non-basic: use java.time formatting i18n; for now just LocalDate
+        // Nonbasic: use java.time formatting i18n; for now just LocalDate
         Instant.ofEpochMilli(date.time).atZone(ZoneId.systemDefault()).toLocalDate()
     } ?: LocalDate.now()
     return TaskHistoryItem(
