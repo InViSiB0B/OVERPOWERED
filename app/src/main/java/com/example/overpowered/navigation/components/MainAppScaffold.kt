@@ -36,7 +36,8 @@ enum class Tab { Today, Progress, Shop }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainAppScaffold(
-    viewModel: AppViewModel = viewModel()
+    viewModel: AppViewModel = viewModel(),
+    onLogout: () -> Unit
 ) {
     var tab by remember { mutableStateOf(Tab.Today) }
     var showProfile by remember { mutableStateOf(false) }
@@ -162,7 +163,8 @@ fun MainAppScaffold(
                             },
                             onRemoveFriend = { friendId ->
                                 viewModel.removeFriend(friendId)
-                            }
+                            },
+                            onLogout = onLogout
                         )
                     }
 

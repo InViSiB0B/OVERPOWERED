@@ -301,6 +301,8 @@ class FirebaseRepository {
         }
     }
 
+    fun signOut() { auth.signOut() }
+
     // Real-time profile updates
     fun observeUserProfile(): Flow<FirebaseResult<UserProfile>> {
         val userId = getCurrentUserId()

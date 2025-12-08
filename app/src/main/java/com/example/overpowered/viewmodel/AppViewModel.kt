@@ -931,6 +931,23 @@ class AppViewModel : ViewModel() {
         }
     }
 
+    fun logout() {
+        viewModelScope.launch {
+            repository.signOut()
+            _phoneAuthState.value = PhoneAuthState.Initial
+            _isOnboarded.value = false
+            _userProfile.value = UserProfile()
+            _tasks.value = emptyList()
+            _completedTasks.value = emptyList()
+            _pendingFriendRequests.value = emptyList()
+            _friends.value = emptyList()
+            _enrichedFriends.value = emptyList()
+            _longTermGoals.value = emptyList()
+            _leaderboardEntries.value = emptyList()
+        }
+    }
+
+
     // Computed properties for UI
     val playerName: String get() = _userProfile.value.playerName
     val playerMoney: Int get() = _userProfile.value.playerMoney

@@ -96,7 +96,7 @@ fun MainNavigation(
                 }
 
                 isOnboarded -> {
-                    MainAppScaffold(viewModel = viewModel)
+                    MainAppScaffold(viewModel = viewModel, onLogout = { viewModel.logout() })
                 }
 
                 else -> {
