@@ -592,7 +592,7 @@ fun ShopItemCard(
         }
     }
 
-    // Insufficient funds dialog
+    // Insufficient funds dialogg
     if (showInsufficientFundsDialog) {
         AlertDialog(
             onDismissRequest = { showInsufficientFundsDialog = false },

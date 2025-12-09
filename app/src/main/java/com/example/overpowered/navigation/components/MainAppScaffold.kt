@@ -36,7 +36,8 @@ enum class Tab { Today, Progress, Shop }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainAppScaffold(
-    viewModel: AppViewModel = viewModel()
+    viewModel: AppViewModel = viewModel(),
+    onLogout: () -> Unit
 ) {
     var tab by remember { mutableStateOf(Tab.Today) }
     var showProfile by remember { mutableStateOf(false) }
@@ -59,7 +60,7 @@ fun MainAppScaffold(
         if (error != null) viewModel.clearError()
     }
 
-    // Safety: if something desyncs and onboarding not complete, route there
+    // Safety: if something de-syncs and onboarding not complete, route there
     if (!isOnboarded && !isLoading) {
         OnboardingScreen(
             onComplete = { username ->
@@ -162,7 +163,8 @@ fun MainAppScaffold(
                             },
                             onRemoveFriend = { friendId ->
                                 viewModel.removeFriend(friendId)
-                            }
+                            },
+                            onLogout = onLogout
                         )
                     }
 
@@ -232,7 +234,7 @@ fun MainAppScaffold(
             }
         }
 
-        // Big center Task button overlay (NOT part of bottomBar height)
+        // Big center Task button overlay ((NOT part of bottomBar height)
         CenterTaskButton(
             isSelected = isTodaySelected,
             onClick = {
@@ -296,7 +298,7 @@ private fun MainBottomBar(
         radius = 80f // Making the glow wider
     )
 
-    // A more vibrant, multi-step glow for the selected state
+    // A more vibrant, multistep glow for the selected state
     val selectedBrush = Brush.radialGradient(
         colors = listOf(
             MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f), // Center color

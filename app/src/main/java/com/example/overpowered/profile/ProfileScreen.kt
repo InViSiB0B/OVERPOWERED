@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,7 +45,8 @@ fun ProfileScreen(
     onSearchUser: (String) -> Unit = {},
     onSendFriendRequest: (String) -> Unit = {},
     onClearSearchedUser: () -> Unit = {},
-    onRemoveFriend: (String) -> Unit = {}
+    onRemoveFriend: (String) -> Unit = {},
+    onLogout: () -> Unit
 ) {
     val playerName = userProfile.playerName
     val profileImageUrl = userProfile.profileImageUrl
@@ -61,6 +63,9 @@ fun ProfileScreen(
     var selectedFriendName by remember { mutableStateOf("") }
     var showRemoveFriendDialog by remember { mutableStateOf(false) }
     val friendNameInput = remember { mutableStateOf("") }
+
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
 
     Column(
         modifier = Modifier
@@ -95,21 +100,30 @@ fun ProfileScreen(
                 Text("Add Friend")
             }
 
-            OutlinedButton(
-                onClick = onEditClick,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary),
-                shape = RoundedCornerShape(12.dp), // Softer corners
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.secondary
-                )
-            ) {
-                Icon(
-                    Icons.Filled.Edit,
-                    contentDescription = "Edit Profile",
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Edit")
+            Row {
+                OutlinedButton(
+                    onClick = onEditClick,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary),
+                    shape = RoundedCornerShape(12.dp), // Softer corners
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.secondary
+                    )
+                ) {
+                    Icon(
+                        Icons.Filled.Edit,
+                        contentDescription = "Edit Profile",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Edit")
+                }
+                IconButton(onClick = { showLogoutDialog = true }) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Logout",
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                }
             }
         }
 
@@ -467,6 +481,32 @@ fun ProfileScreen(
                         selectedFriendId = null
                     }
                 ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Logout") },
+            text = { Text("Are you sure you want to log out?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogout()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Logout")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
                     Text("Cancel")
                 }
             }

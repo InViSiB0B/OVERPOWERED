@@ -52,7 +52,7 @@ import com.example.overpowered.progress.components.StreakCalculator
 import com.example.overpowered.profile.components.FramedProfilePicture
 import com.example.overpowered.profile.components.CompactPlayerNameWithTitle
 
-// ---------- UI models  ----------
+// ---------- UI models  -----------
 data class PlayerStats(
     val exp: Int,
     val level: Int,
@@ -198,7 +198,7 @@ private fun UserProfile.toPlayerStatsForProgress(): PlayerStats {
 
 private fun FirebaseTask.toHistoryItem(): TaskHistoryItem {
     val localDate = (completedAt ?: createdAt)?.let { date ->
-        // Non-basic: use java.time formatting i18n; for now just LocalDate
+        // Nonbasic: use java.time formatting i18n; for now just LocalDate
         Instant.ofEpochMilli(date.time).atZone(ZoneId.systemDefault()).toLocalDate()
     } ?: LocalDate.now()
     return TaskHistoryItem(
