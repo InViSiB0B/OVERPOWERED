@@ -31,7 +31,7 @@ class FirebaseRepository {
     private val auth = FirebaseAuth.getInstance()
     private val storage = FirebaseStorage.getInstance()
 
-    // Start phone verification
+    // Start phone verifications
     fun startPhoneVerification(
         phoneNumber: String,
         activity: android.app.Activity,
