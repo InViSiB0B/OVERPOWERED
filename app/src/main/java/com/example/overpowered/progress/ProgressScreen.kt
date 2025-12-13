@@ -51,6 +51,11 @@ import com.example.overpowered.data.LongTermGoal
 import com.example.overpowered.progress.components.StreakCalculator
 import com.example.overpowered.profile.components.FramedProfilePicture
 import com.example.overpowered.profile.components.CompactPlayerNameWithTitle
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+
 
 // ---------- UI models  -----------
 data class PlayerStats(
@@ -399,137 +404,150 @@ fun LeaderboardCard(
     onTimeframeChange: (LeaderboardTimeframe) -> Unit,
     onRankingTypeChange: (LeaderboardRankingType) -> Unit
 ) {
-    // When switching to Level ranking, automatically set to Lifetime
+    // When switching to Level ranking, automatically force Lifetime
     LaunchedEffect(selectedRankingType) {
-        if (selectedRankingType == LeaderboardRankingType.LEVEL && selectedTimeframe == LeaderboardTimeframe.WEEKLY) {
+        if (
+            selectedRankingType == LeaderboardRankingType.LEVEL &&
+            selectedTimeframe == LeaderboardTimeframe.WEEKLY
+        ) {
             onTimeframeChange(LeaderboardTimeframe.LIFETIME)
         }
     }
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                "Leaderboard",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            // Toggle controls - Level/Tasks always in same position
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Ranking type toggle - always visible, always full width
-                SegmentedButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    options = listOf("Level", "Tasks"),
-                    selectedIndex = if (selectedRankingType == LeaderboardRankingType.LEVEL) 0 else 1,
-                    onSelectionChange = { index ->
-                        onRankingTypeChange(
-                            if (index == 0) LeaderboardRankingType.LEVEL else LeaderboardRankingType.TASKS
-                        )
-                    }
+                Text(
+                    text = "Leaderboard",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
 
-                // Timeframe toggle - only show when Tasks is selected
+                // Timeframe toggle (Tasks only)
                 if (selectedRankingType == LeaderboardRankingType.TASKS) {
-                    SegmentedButton(
-                        modifier = Modifier.fillMaxWidth(),
-                        options = listOf("Weekly", "Lifetime"),
-                        selectedIndex = if (selectedTimeframe == LeaderboardTimeframe.WEEKLY) 0 else 1,
+                    MiniSegmentedButton(
+                        options = listOf("Weekly", "Life"),
+                        selectedIndex =
+                            if (selectedTimeframe == LeaderboardTimeframe.WEEKLY) 0 else 1,
                         onSelectionChange = { index ->
                             onTimeframeChange(
-                                if (index == 0) LeaderboardTimeframe.WEEKLY else LeaderboardTimeframe.LIFETIME
+                                if (index == 0)
+                                    LeaderboardTimeframe.WEEKLY
+                                else
+                                    LeaderboardTimeframe.LIFETIME
                             )
                         }
                     )
                 }
             }
-
-            // Leaderboard content
-            if (isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(32.dp),
-                        color = MaterialTheme.colorScheme.primary
+            SegmentedButton(
+                modifier = Modifier.fillMaxWidth(),
+                options = listOf("Level", "Tasks"),
+                selectedIndex =
+                    if (selectedRankingType == LeaderboardRankingType.LEVEL) 0 else 1,
+                onSelectionChange = { index ->
+                    onRankingTypeChange(
+                        if (index == 0)
+                            LeaderboardRankingType.LEVEL
+                        else
+                            LeaderboardRankingType.TASKS
                     )
                 }
-            } else if (entries.isEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "🏆",
-                        fontSize = 48.sp
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "No friends yet",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Add friends to compete!",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Top 10 entries
-                    entries.take(10).forEach { entry ->
-                        LeaderboardEntryRow(
-                            entry = entry,
-                            isCurrentUser = entry.userId == currentUserId,
-                            showLevel = selectedRankingType == LeaderboardRankingType.LEVEL
+            )
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(32.dp),
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
-                    // Show current user if they're not in top 10
-                    val currentUserEntry = entries.find { it.userId == currentUserId }
-                    if (currentUserEntry != null && currentUserEntry.rank > 10) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 8.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant
-                        )
+                }
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center
-                        ) {
+                entries.isEmpty() -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("🏆", fontSize = 48.sp)
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            text = "No friends yet",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Add friends to compete!",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                else -> {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // Top 10
+                        entries.take(10).forEach { entry ->
+                            LeaderboardEntryRow(
+                                entry = entry,
+                                isCurrentUser = entry.userId == currentUserId,
+                                showLevel =
+                                    selectedRankingType == LeaderboardRankingType.LEVEL
+                            )
+                        }
+
+                        // Current user outside top 10
+                        val currentUserEntry =
+                            entries.find { it.userId == currentUserId }
+
+                        if (currentUserEntry != null && currentUserEntry.rank > 10) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 8.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant
+                            )
+
                             Text(
                                 text = "Your Rank",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
+                            )
+
+                            LeaderboardEntryRow(
+                                entry = currentUserEntry,
+                                isCurrentUser = true,
+                                showLevel =
+                                    selectedRankingType == LeaderboardRankingType.LEVEL
                             )
                         }
-
-                        LeaderboardEntryRow(
-                            entry = currentUserEntry,
-                            isCurrentUser = true,
-                            showLevel = selectedRankingType == LeaderboardRankingType.LEVEL
-                        )
                     }
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun SegmentedButton(
@@ -573,6 +591,61 @@ fun SegmentedButton(
                         Text(
                             text = option,
                             fontSize = 13.sp,
+                            fontWeight = if (selectedIndex == index) FontWeight.Bold else FontWeight.Medium,
+                            color = if (selectedIndex == index)
+                                MaterialTheme.colorScheme.onPrimary
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MiniSegmentedButton(
+    modifier: Modifier = Modifier,
+    options: List<String>,
+    selectedIndex: Int,
+    onSelectionChange: (Int) -> Unit
+) {
+    Surface(
+        modifier = modifier.height(30.dp).widthIn(min = 100.dp, max = 170.dp),
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 2.dp,
+        shadowElevation = 4.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            options.forEachIndexed { index, option ->
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable { onSelectionChange(index) },
+                    shape = RoundedCornerShape(7.dp),
+                    color = if (selectedIndex == index)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        Color.Transparent,
+                    tonalElevation = if (selectedIndex == index) 4.dp else 0.dp,
+                    shadowElevation = if (selectedIndex == index) 2.dp else 0.dp
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = option,
+                            fontSize = 10.sp,
                             fontWeight = if (selectedIndex == index) FontWeight.Bold else FontWeight.Medium,
                             color = if (selectedIndex == index)
                                 MaterialTheme.colorScheme.onPrimary
@@ -916,8 +989,12 @@ fun LongTermGoalCard(
     onEdit: () -> Unit = {}
 ) {
     val haptic = LocalHapticFeedback.current
+
+    // ✅ collapsed by default (space saver)
+    var expanded by remember(goal.id) { mutableStateOf(false) }
+
     val config = GoalSize.getConfig(goal.size)
-    val progress = goal.completedDays.toFloat() / goal.targetDays.toFloat()
+    val progress = (goal.completedDays.toFloat() / goal.targetDays.toFloat()).coerceIn(0f, 1f)
     val weeksElapsed = goal.currentWeek + 1
 
     // Calculate strike penalty (25% reduction per strike)
@@ -929,12 +1006,13 @@ fun LongTermGoalCard(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
-                onClick = { /* No action on regular click */ },
+                onClick = { expanded = !expanded },
                 onLongClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     onEdit()
                 }
-            ),
+            )
+            .animateContentSize(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -942,13 +1020,13 @@ fun LongTermGoalCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(horizontal = 20.dp, vertical = if (expanded) 20.dp else 14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Header with title and delete button
+            // ---------- HEADER (always visible) ----------
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -956,17 +1034,25 @@ fun LongTermGoalCard(
                         text = goal.name,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = if (expanded) 2 else 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    goal.description?.let {
-                        Text(
-                            text = it,
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
+
+                    // Keep this tiny summary visible even when collapsed
+                    Text(
+                        text = "${goal.completedDays}/${goal.targetDays} days • ${config.displayName}",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
+
+                // Expand / collapse icon (visual affordance)
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
                 IconButton(
                     onClick = onDelete,
@@ -984,65 +1070,7 @@ fun LongTermGoalCard(
                 }
             }
 
-            // Tags
-            if (goal.tags.isNotEmpty()) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                ) {
-                    goal.tags.forEach { tag ->
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                        ) {
-                            Text(
-                                text = tag,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Strikes Display (always show to keep user aware)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Strikes:",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (goal.strikes > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                repeat(3) { index ->
-                    Text(
-                        text = if (index < goal.strikes) "✕" else "○",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (index < goal.strikes)
-                            MaterialTheme.colorScheme.error
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                if (goal.strikes > 0) {
-                    Text(
-                        text = "(-${(goal.strikes * 25)}% reward)",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(start = 4.dp)
-                    )
-                }
-            }
-
-            // Progress Bar
+            // ---------- PROGRESS (always visible) ----------
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -1076,63 +1104,134 @@ fun LongTermGoalCard(
                 )
             }
 
-            // Stats Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        text = "${config.displayName} Goal",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "$weeksElapsed / ${goal.totalWeeks} weeks",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
+            // ---------- EXPANDABLE DETAILS ----------
+            AnimatedVisibility(visible = expanded) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Description
+                    goal.description?.let {
+                        Text(
+                            text = it,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
 
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "Rewards",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // Show adjusted rewards with strikethrough for original if penalized
+                    // Tags
+                    if (goal.tags.isNotEmpty()) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState())
+                        ) {
+                            goal.tags.forEach { tag ->
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                                ) {
+                                    Text(
+                                        text = tag,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Strikes display
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Strikes:",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (goal.strikes > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        repeat(3) { index ->
+                            Text(
+                                text = if (index < goal.strikes) "✕" else "○",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (index < goal.strikes)
+                                    MaterialTheme.colorScheme.error
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         if (goal.strikes > 0) {
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text(
-                                    text = "+$adjustedRewardXP XP",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text(
-                                    text = "+🪙$adjustedRewardMoney",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.tertiary
-                                )
-                            }
-                        } else {
                             Text(
-                                text = "+${goal.rewardXP} XP",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.primary
+                                text = "(-${(goal.strikes * 25)}% reward)",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        }
+                    }
+
+                    // Stats + rewards
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                text = "${config.displayName} Goal",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "+🪙${goal.rewardMoney}",
+                                text = "$weeksElapsed / ${goal.totalWeeks} weeks",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.tertiary
+                                color = MaterialTheme.colorScheme.onBackground
                             )
+                        }
+
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "Rewards",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (goal.strikes > 0) {
+                                    Text(
+                                        text = "+$adjustedRewardXP XP",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = "+🪙$adjustedRewardMoney",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
+                                } else {
+                                    Text(
+                                        text = "+${goal.rewardXP} XP",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = "+🪙${goal.rewardMoney}",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -1140,6 +1239,7 @@ fun LongTermGoalCard(
         }
     }
 }
+
 
 @Composable
 fun CreateGoalDialog(
