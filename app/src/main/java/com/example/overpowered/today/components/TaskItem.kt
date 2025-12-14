@@ -108,8 +108,8 @@ fun TaskItem(
                     IconButton(
                         onClick = onComplete,
                         colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.secondary,
-                            contentColor = MaterialTheme.colorScheme.onSecondary
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         Icon(Icons.Filled.CheckCircle, contentDescription = "Complete Task")

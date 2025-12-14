@@ -353,7 +353,7 @@ fun PurchaseConfirmationDialog(
                     Button(
                         onClick = onDismiss,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+                            containerColor = MaterialTheme.colorScheme.secondary
                         ),
                         shape = RoundedCornerShape(12.dp)
                     ) {
@@ -365,7 +365,7 @@ fun PurchaseConfirmationDialog(
                     Button(
                         onClick = onEquipNow,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondary
+                            containerColor = MaterialTheme.colorScheme.primary
                         ),
                         shape = RoundedCornerShape(12.dp)
                     ) {
@@ -565,7 +565,7 @@ fun ShopItemCard(
                 }
             },
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (canAfford) MaterialTheme.colorScheme.secondary else Color(0xFFE2E8F0).copy(alpha = 0.6f)
+                containerColor = if (canAfford) MaterialTheme.colorScheme.primary else Color(0xFFE2E8F0).copy(alpha = 0.6f)
             ),
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier

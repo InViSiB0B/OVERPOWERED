@@ -105,8 +105,8 @@ fun TodayScreen(
                             }
                         },
                         colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
+                            containerColor = if (isTaskInputVisible) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
+                            contentColor = if (isTaskInputVisible) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         Icon(

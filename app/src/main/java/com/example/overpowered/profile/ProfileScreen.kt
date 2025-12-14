@@ -86,8 +86,8 @@ fun ProfileScreen(
             Button(
                 onClick = { showAddFriendDialog.value = true },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary,
-                    contentColor = MaterialTheme.colorScheme.onSecondary
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 shape = RoundedCornerShape(12.dp) // Softer corners
             ) {
@@ -103,10 +103,10 @@ fun ProfileScreen(
             Row {
                 OutlinedButton(
                     onClick = onEditClick,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(12.dp), // Softer corners
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.secondary
+                        contentColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
                     Icon(
