@@ -57,6 +57,7 @@ dependencies {
     implementation("com.google.firebase:firebase-storage-ktx:21.0.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
     implementation("androidx.compose.foundation:foundation:1.9.3")
+    implementation("androidx.compose.ui:ui-graphics:1.10.0")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
