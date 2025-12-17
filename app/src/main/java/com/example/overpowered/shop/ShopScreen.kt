@@ -1,0 +1,631 @@
+package com.example.overpowered.shop
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.overpowered.data.FrameCatalog
+import com.example.overpowered.profile.components.FramedProfilePicture
+import com.example.overpowered.data.TitleCatalog
+import com.example.overpowered.profile.components.StyledTitle
+import com.example.overpowered.data.ThemeCatalog
+import java.util.*
+import kotlin.random.Random
+
+data class ShopItem(
+    val id: String,
+    val name: String,
+    val price: Int,
+    val category: String,
+    val color: Color = Color(0xFF667EEA),
+    val description: String = ""
+)
+
+// Catalog of all available items
+object ShopCatalog {
+    val allFrames = FrameCatalog.getAllFrames().map { frame ->
+        ShopItem(
+            id = frame.id,
+            name = frame.name,
+            price = frame.price,
+            category = "Frames",
+            color = Color(0xFF667EEA), // Preview color
+            description = ""
+        )
+    }
+
+    val allTitles = TitleCatalog.getAllTitles().map { title ->
+        ShopItem(
+            id = title.id,
+            name = title.name,
+            price = title.price,
+            category = "Titles",
+            color = title.color,
+            description = ""
+        )
+    }
+
+    val allThemes = ThemeCatalog.getPurchasableThemes().map { theme ->
+        ShopItem(
+            id = theme.id,
+            name = theme.name,
+            price = theme.price,
+            category = "Themes",
+            color = theme.previewColor,
+            description = theme.description
+        )
+    }
+}
+
+// Get today's date in EST for shop rotation
+fun getTodayDateEST(): String {
+    val calendar = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"))
+    return "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH)}-${calendar.get(Calendar.DAY_OF_MONTH)}"
+}
+
+// Get daily shop rotation based on date seed
+fun getDailyShopItems(): Triple<List<ShopItem>, List<ShopItem>, List<ShopItem>> {
+    val dateSeed = getTodayDateEST().hashCode().toLong()
+    val random = Random(dateSeed)
+
+    // Select 5 random items from each category
+    val dailyFrames = ShopCatalog.allFrames.shuffled(random).take(5)
+    val dailyTitles = ShopCatalog.allTitles.shuffled(random).take(5)
+    val dailyThemes = ShopCatalog.allThemes.shuffled(random).take(5)
+
+    return Triple(dailyFrames, dailyTitles, dailyThemes)
+}
+
+@Composable
+fun ShopScreen(
+    playerMoney: Int,
+    purchasedItems: Set<String>,
+    onPurchase: (Int, String) -> Unit,
+    onEquipItem: (String, String) -> Unit = { _, _ -> }
+) {
+    // Track recently purchased item for confirmation dialog
+    var purchasedItem by remember { mutableStateOf<ShopItem?>(null) }
+
+    // Get today's shop rotation
+    val (allFrames, allTitles, allThemes) = remember(getTodayDateEST()) {
+        getDailyShopItems()
+    }
+
+    // Filter out purchased items
+    val frames = allFrames.filter { it.id !in purchasedItems }
+    val titles = allTitles.filter { it.id !in purchasedItems }
+    val themes = allThemes.filter { it.id !in purchasedItems }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+        contentPadding = PaddingValues(bottom = 100.dp)
+    ) {
+        item {
+            // Shop header with reset timer
+            ShopHeader()
+        }
+
+        // Frames Section - only show if items available
+        if (frames.isNotEmpty()) {
+            item {
+                ShopCategory(
+                    title = "Frames:",
+                    items = frames,
+                    playerMoney = playerMoney,
+                    onPurchase = { price, itemId ->
+                        onPurchase(price, itemId)
+                        // Find and set the purchased item for the confirmation dialog
+                        purchasedItem = frames.find { it.id == itemId }
+                    }
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+
+        // Titles Section - only show if items available
+        if (titles.isNotEmpty()) {
+            item {
+                ShopCategory(
+                    title = "Titles:",
+                    items = titles,
+                    playerMoney = playerMoney,
+                    onPurchase = { price, itemId ->
+                        onPurchase(price, itemId)
+                        // Find and set the purchased item for the confirmation dialog
+                        purchasedItem = titles.find { it.id == itemId }
+                    }
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+
+        // Themes Section - only show if items available
+        if (themes.isNotEmpty()) {
+            item {
+                ShopCategory(
+                    title = "Themes:",
+                    items = themes,
+                    playerMoney = playerMoney,
+                    onPurchase = { price, itemId ->
+                        onPurchase(price, itemId)
+                        // Find and set the purchased item for the confirmation dialog
+                        purchasedItem = themes.find { it.id == itemId }
+                    }
+                )
+            }
+        }
+
+        // Show message when all items purchased
+        if (frames.isEmpty() && titles.isEmpty() && themes.isEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "🎉",
+                            fontSize = 48.sp
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "All Items Purchased!",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "You've bought everything in the shop. Check back later for new items!",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+
+    // Purchase Confirmation Dialog
+    purchasedItem?.let { item ->
+        PurchaseConfirmationDialog(
+            item = item,
+            onEquipNow = {
+                onEquipItem(item.category, item.id)
+                purchasedItem = null
+            },
+            onDismiss = {
+                purchasedItem = null
+            }
+        )
+    }
+}
+
+@Composable
+fun PurchaseConfirmationDialog(
+    item: ShopItem,
+    onEquipNow: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Congratulations!",
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        text = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "You purchased:",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Item preview
+                Card(
+                    modifier = Modifier.size(100.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = when (item.category) {
+                            "Titles" -> MaterialTheme.colorScheme.surfaceVariant
+                            else -> item.color
+                        }
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        when (item.category) {
+                            "Frames" -> {
+                                FramedProfilePicture(
+                                    profileImageUrl = null,
+                                    frameId = item.id,
+                                    size = 80.dp,
+                                    iconSize = 40.dp
+                                )
+                            }
+                            "Titles" -> {
+                                StyledTitle(
+                                    titleId = item.id,
+                                    fontSize = 14.sp,
+                                    includeBackground = false
+                                )
+                            }
+                            "Themes" -> {
+                                val theme = ThemeCatalog.getThemeById(item.id)
+                                if (theme != null) {
+                                    Column(
+                                        modifier = Modifier.fillMaxSize(),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(0.8f),
+                                            horizontalArrangement = Arrangement.SpaceEvenly
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(24.dp)
+                                                    .background(theme.lightColorScheme.primary, CircleShape)
+                                            )
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(24.dp)
+                                                    .background(theme.lightColorScheme.secondary, CircleShape)
+                                            )
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(24.dp)
+                                                    .background(theme.lightColorScheme.tertiary, CircleShape)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = item.name,
+                                            color = Color.White,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = item.name,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Centered buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = onDismiss,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Neat!")
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Button(
+                        onClick = onEquipNow,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Equip Now")
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {},
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(16.dp)
+    )
+}
+
+@Composable
+fun ShopHeader() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Daily Shop",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = getTimeUntilMidnightEST(),
+                fontSize = 14.sp,
+                color = Color.White.copy(alpha = 0.9f)
+            )
+        }
+    }
+}
+
+// Calculate time until midnight EST
+fun getTimeUntilMidnightEST(): String {
+    val now = Calendar.getInstance(TimeZone.getTimeZone("America/New_York"))
+    val midnight = Calendar.getInstance(TimeZone.getTimeZone("America/New_York")).apply {
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+        add(Calendar.DAY_OF_MONTH, 1)
+    }
+
+    val diff = midnight.timeInMillis - now.timeInMillis
+    val hours = (diff / (1000 * 60 * 60)) % 24
+    val minutes = (diff / (1000 * 60)) % 60
+
+    return "Resets in ${hours}h ${minutes}m"
+}
+
+@Composable
+fun ShopCategory(
+    title: String,
+    items: List<ShopItem>,
+    playerMoney: Int,
+    onPurchase: (Int, String) -> Unit
+) {
+    Column {
+        Text(
+            text = title,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
+        )
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(horizontal = 4.dp)
+        ) {
+            items(items) { item ->
+                ShopItemCard(
+                    item = item,
+                    playerMoney = playerMoney,
+                    onPurchase = onPurchase
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ShopItemCard(
+    item: ShopItem,
+    playerMoney: Int,
+    onPurchase: (Int, String) -> Unit
+) {
+    var showInsufficientFundsDialog by remember { mutableStateOf(false) }
+    val canAfford = playerMoney >= item.price
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Item preview card
+        Card(
+            modifier = Modifier.size(100.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = when (item.category) {
+                    "Titles" -> MaterialTheme.colorScheme.surfaceVariant // Dark neutral background for titles
+                    else -> item.color
+                }
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                when (item.category) {
+                    "Frames" -> {
+                        // Show actual frame preview
+                        FramedProfilePicture(
+                            profileImageUrl = null,
+                            frameId = item.id,
+                            size = 80.dp,
+                            iconSize = 40.dp
+                        )
+                    }
+                    "Titles" -> {
+                        // Title with styling
+                        StyledTitle(
+                            titleId = item.id,
+                            fontSize = 14.sp,
+                            includeBackground = false
+                        )
+                    }
+                    "Themes" -> {
+                        // Theme preview - color swatches showing theme colors
+                        val theme = ThemeCatalog.getThemeById(item.id)
+                        if (theme != null) {
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(0.8f),
+                                    horizontalArrangement = Arrangement.SpaceEvenly
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .background(theme.lightColorScheme.primary, CircleShape)
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .background(theme.lightColorScheme.secondary, CircleShape)
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .background(theme.lightColorScheme.tertiary, CircleShape)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = item.name,
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // Item name
+        Text(
+            text = item.name,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center
+        )
+
+        // Price button
+        Button(
+            onClick = {
+                if (canAfford) {
+                    onPurchase(item.price, item.id)
+                } else {
+                    showInsufficientFundsDialog = true
+                }
+            },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (canAfford) MaterialTheme.colorScheme.primary else Color(0xFFE2E8F0).copy(alpha = 0.6f)
+            ),
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier
+                .height(32.dp)
+                .width(80.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "🪙",
+                    fontSize = 14.sp
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = item.price.toString(),
+                    color = if (canAfford) Color(0xFF4A5568) else Color(0xFF4A5568).copy(alpha = 0.5f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+
+    // Insufficient funds dialogg
+    if (showInsufficientFundsDialog) {
+        AlertDialog(
+            onDismissRequest = { showInsufficientFundsDialog = false },
+            title = {
+                Text(
+                    text = "Not Enough Coins",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "You need 🪙${item.price} but only have 🪙${playerMoney}.",
+                        fontSize = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Complete some tasks to earn more coins!",
+                        fontSize = 14.sp,
+                        color = Color(0xFF667EEA),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showInsufficientFundsDialog = false }
+                ) {
+                    Text("Got it!")
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+}

@@ -1,0 +1,562 @@
+package com.example.overpowered.profile
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.example.overpowered.data.Friendship
+import com.example.overpowered.data.UserProfile
+import com.example.overpowered.profile.components.CompactPlayerNameWithTitle
+import com.example.overpowered.profile.components.FramedProfilePicture
+import com.example.overpowered.profile.components.PlayerNameWithTitle
+
+@Composable
+fun ProfileScreen(
+    userProfile: UserProfile,
+    playerMoney: Int,
+    playerExperience: Int,
+    friends: List<Friendship> = emptyList(),
+    searchedUser: UserProfile? = null,
+    onEditClick: () -> Unit,
+    onSearchUser: (String) -> Unit = {},
+    onSendFriendRequest: (String) -> Unit = {},
+    onClearSearchedUser: () -> Unit = {},
+    onRemoveFriend: (String) -> Unit = {},
+    onLogout: () -> Unit
+) {
+    val playerName = userProfile.playerName
+    val profileImageUrl = userProfile.profileImageUrl
+    val discriminator = userProfile.discriminator
+    val selectedTitle = userProfile.selectedTitle
+    // Calculate player level based on experience (level = experience / 100 + 1)
+    val playerLevel = (playerExperience / 100) + 1
+
+    // Add friend dialog state
+    val showAddFriendDialog = remember { mutableStateOf(false) }
+
+    // Remove friend dialog state
+    var selectedFriendId by remember { mutableStateOf<String?>(null) }
+    var selectedFriendName by remember { mutableStateOf("") }
+    var showRemoveFriendDialog by remember { mutableStateOf(false) }
+    val friendNameInput = remember { mutableStateOf("") }
+
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp) // Consistent padding
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(20.dp) // Consistent spacing
+    ) {
+        // Top action buttons
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Button(
+                onClick = { showAddFriendDialog.value = true },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                shape = RoundedCornerShape(12.dp) // Softer corners
+            ) {
+                Icon(
+                    Icons.Filled.AddCircle,
+                    contentDescription = "Add Friend",
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Add Friend")
+            }
+
+            Row {
+                OutlinedButton(
+                    onClick = onEditClick,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                    shape = RoundedCornerShape(12.dp), // Softer corners
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        Icons.Filled.Edit,
+                        contentDescription = "Edit Profile",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Edit")
+                }
+                IconButton(onClick = { showLogoutDialog = true }) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Logout",
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            }
+        }
+
+        // Profile picture
+        Card(
+            modifier = Modifier.size(120.dp),
+            shape = RoundedCornerShape(60.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                if (profileImageUrl != null) {
+                    FramedProfilePicture(
+                        profileImageUrl = profileImageUrl,
+                        frameId = userProfile.selectedFrame,
+                        size = 120.dp
+                    )
+                } else {
+                    Icon(
+                        Icons.Filled.Person,
+                        contentDescription = "Profile Picture",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(60.dp)
+                    )
+                }
+            }
+        }
+
+        // User info
+        PlayerNameWithTitle(
+            playerName = playerName,
+            discriminator = discriminator,
+            titleId = selectedTitle,
+            nameSize = 24.sp,
+            titleSize = 16.sp
+        )
+
+        // Stats section
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Stats",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // Level Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Player Level",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = playerLevel.toString(),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                // Coins Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Coins",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "🪙$playerMoney",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+
+                // EXP Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Experience Points",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = playerExperience.toString(),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+            }
+        }
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Friends",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "${friends.size}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                if (friends.isEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "👥",
+                            fontSize = 32.sp
+                        )
+                        Text(
+                            text = "No friends yet",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Add friends to see them here!",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
+                } else {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        friends.forEach { friend ->
+                            FriendListItem(
+                                friend = friend,
+                                isSelected = selectedFriendId == friend.friendId,
+                                onClick = {
+                                    selectedFriendId = if (selectedFriendId == friend.friendId) null else friend.friendId
+                                },
+                                onRemove = {
+                                    selectedFriendName = friend.friendName.split("#")[0]
+                                    showRemoveFriendDialog = true
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+
+    // Search Friends Dialog
+    if (showAddFriendDialog.value) {
+        AlertDialog(
+            onDismissRequest = {
+                friendNameInput.value = ""
+                showAddFriendDialog.value = false
+            },
+            title = {
+                Text(
+                    text = "Search Friend",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Enter your friend's player name:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = friendNameInput.value,
+                        onValueChange = { friendNameInput.value = it },
+                        label = { Text("Player Name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (friendNameInput.value.isNotBlank()) {
+                            onSearchUser(friendNameInput.value)
+                            friendNameInput.value = ""
+                            showAddFriendDialog.value = false
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ),
+                    enabled = friendNameInput.value.isNotBlank()
+                ) {
+                    Text("Search")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        friendNameInput.value = ""
+                        showAddFriendDialog.value = false
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    // User Found Confirmation Dialog
+    if (searchedUser != null) {
+        AlertDialog(
+            onDismissRequest = {
+                onClearSearchedUser()
+            },
+            title = {
+                Text(
+                    text = "Send Friend Request?",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Profile picture with frame
+                    FramedProfilePicture(
+                        profileImageUrl = searchedUser.profileImageUrl,
+                        frameId = searchedUser.selectedFrame,
+                        size = 80.dp
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Player name with title
+                    PlayerNameWithTitle(
+                        playerName = searchedUser.playerName ?: "Unknown",
+                        discriminator = searchedUser.discriminator ?: "0000",
+                        titleId = searchedUser.selectedTitle,
+                        nameSize = 18.sp,
+                        titleSize = 14.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Do you want to send a friend request to this player?",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val playerNameWithDiscriminator = "${searchedUser.playerName}#${searchedUser.discriminator}"
+                        onSendFriendRequest(playerNameWithDiscriminator)
+                        onClearSearchedUser()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text("Send Request")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        onClearSearchedUser()
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    // Remove Friend Confirmation Dialog
+    if (showRemoveFriendDialog && selectedFriendId != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showRemoveFriendDialog = false
+                selectedFriendId = null
+            },
+            title = {
+                Text(
+                    text = "Remove Friend?",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text("Are you sure you want to remove $selectedFriendName from your friends list?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onRemoveFriend(selectedFriendId!!)
+                        showRemoveFriendDialog = false
+                        selectedFriendId = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Remove")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showRemoveFriendDialog = false
+                        selectedFriendId = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Logout") },
+            text = { Text("Are you sure you want to log out?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogout()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Logout")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun FriendListItem(
+    friend: Friendship,
+    isSelected: Boolean = false,
+    onClick: () -> Unit = {},
+    onRemove: () -> Unit = {}
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Friend profile picture with frame
+        FramedProfilePicture(
+            profileImageUrl = friend.friendProfileImageUrl,
+            frameId = friend.selectedFrame,
+            size = 40.dp,
+            iconSize = 20.dp
+        )
+
+        // Friend name with title
+        CompactPlayerNameWithTitle(
+            playerName = friend.friendName.split("#")[0], // Get name without discriminator
+            titleId = friend.selectedTitle,
+            nameSize = 16.sp,
+            titleSize = 14.sp,
+            modifier = Modifier.weight(1f)
+        )
+
+        // Show X button when selected
+        if (isSelected) {
+            IconButton(
+                onClick = onRemove,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = "Remove Friend",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+    }
+}
