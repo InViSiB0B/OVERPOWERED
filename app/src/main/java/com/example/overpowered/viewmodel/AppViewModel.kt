@@ -258,6 +258,7 @@ class AppViewModel : ViewModel() {
         }
     }
 
+    // TODO: save fcmToken?
     private fun loadUserData() {
         // Observe profile changes
         viewModelScope.launch {
@@ -486,7 +487,13 @@ class AppViewModel : ViewModel() {
                     put("title", title)
                     description?.let { put("description", it) }
                     put("tags", tags)
-                    dueDate?.let { put("dueDate", it) }
+
+                    // If dueDate changed, reset deadlineNotified
+                    if (dueDate != null && dueDate != firebaseTask.dueDate) {
+                        put("dueDate", dueDate)
+                        put("deadlineNotified", false)
+                    }
+
                     put("isRecurring", isRecurring)
                     recurrenceType?.let { put("recurrenceType", it) }
                 }
