@@ -15,6 +15,7 @@ import com.google.firebase.FirebaseException
 import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.auth.PhoneAuthProvider
+import com.google.firebase.messaging.FirebaseMessaging
 import java.util.concurrent.TimeUnit
 import java.util.*
 
@@ -30,6 +31,22 @@ class FirebaseRepository {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
     private val storage = FirebaseStorage.getInstance()
+
+    suspend fun getFcmTokenOrNull(): String? {
+        return try {
+            FirebaseMessaging.getInstance().token.await()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun saveFcmToken(token: String) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(uid)
+            .update("fcmToken", token)
+    }
 
     // Start phone verifications
     fun startPhoneVerification(
@@ -237,9 +254,12 @@ class FirebaseRepository {
 
             when (profileResult) {
                 is FirebaseResult.Success -> {
+                    val fcmToken = getFcmTokenOrNull()
+
                     val updatedProfile = profileResult.data.copy(
                         playerName = username,
                         discriminator = discriminator,
+                        fcmToken = fcmToken ?: profileResult.data.fcmToken,
                         isOnboarded = true,
                         phoneNumber = phoneNumber
                     )

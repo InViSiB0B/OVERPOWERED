@@ -18,6 +18,7 @@ import com.example.overpowered.data.LongTermGoal
 import com.example.overpowered.data.GoalSize
 import com.example.overpowered.data.FirebaseTask
 import com.example.overpowered.data.FirebaseResult
+import com.google.firebase.messaging.FirebaseMessaging
 
 sealed class PhoneAuthState {
     object Initial : PhoneAuthState()
@@ -179,6 +180,8 @@ class AppViewModel : ViewModel() {
 
             when (val result = repository.verifyPhoneCode(verificationId, code)) {
                 is FirebaseResult.Success -> {
+                    saveFcmToken()
+
                     // Check if user is onboarded
                     val onboarded = repository.isUserOnboarded()
                     if (onboarded) {
@@ -204,6 +207,8 @@ class AppViewModel : ViewModel() {
     private suspend fun handlePhoneSignIn(credential: PhoneAuthCredential, phoneNumber: String) {
         when (val result = repository.signInWithPhoneCredential(credential)) {
             is FirebaseResult.Success -> {
+                saveFcmToken()
+
                 val onboarded = repository.isUserOnboarded()
                 if (onboarded) {
                     _isOnboarded.value = true
@@ -247,6 +252,13 @@ class AppViewModel : ViewModel() {
         }
     }
 
+    private fun saveFcmToken() {
+        FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
+            repository.saveFcmToken(token)
+        }
+    }
+
+    // TODO: save fcmToken?
     private fun loadUserData() {
         // Observe profile changes
         viewModelScope.launch {
@@ -475,7 +487,13 @@ class AppViewModel : ViewModel() {
                     put("title", title)
                     description?.let { put("description", it) }
                     put("tags", tags)
-                    dueDate?.let { put("dueDate", it) }
+
+                    // If dueDate changed, reset deadlineNotified
+                    if (dueDate != null && dueDate != firebaseTask.dueDate) {
+                        put("dueDate", dueDate)
+                        put("deadlineNotified", false)
+                    }
+
                     put("isRecurring", isRecurring)
                     recurrenceType?.let { put("recurrenceType", it) }
                 }
@@ -871,7 +889,7 @@ class AppViewModel : ViewModel() {
             _isLoadingLeaderboard.value = true
 
             try {
-                // Get friend IDss
+                // Get friend IDs
                 val friendIds = _friends.value.map { it.friendId }
 
                 if (friendIds.isEmpty()) {

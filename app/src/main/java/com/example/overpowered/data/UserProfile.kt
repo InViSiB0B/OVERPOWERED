@@ -22,6 +22,7 @@ data class UserProfile(
     val userId: String = "",
     val playerName: String = "Player Name",
     val discriminator: String = "0000", // 4-digit identifier
+    val fcmToken: String = "", // Used for notification delivery
     val profileImageUrl: String? = null, // Firebase Storage URL
     val playerExperience: Int = 0,
     val playerLevel: Int = 1,
