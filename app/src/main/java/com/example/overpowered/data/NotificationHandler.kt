@@ -63,7 +63,7 @@ class NotificationHandler(private val context: Context) {
         val notification = NotificationCompat.Builder(context, channelId)
             .setContentTitle(title)
             .setContentText(body)
-            //.setSmallIcon(R.drawable.ic_notification) // TODO: set app icon
+            .setSmallIcon(R.drawable.ic_notification) // TODO: set app icon
             .setAutoCancel(true)
             .build()
 
